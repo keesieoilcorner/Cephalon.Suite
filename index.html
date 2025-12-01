@@ -328,6 +328,35 @@
       50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
     }
 
+    /* Mobile: strip heavy effects, keep cubes */
+    @media (max-width: 768px) {
+      .page-transition,
+      .page-transition::before,
+      .page-transition .transition-sheen {
+        opacity: 0 !important;
+        animation: none !important;
+        transition: none !important;
+        background: none;
+        pointer-events: none;
+      }
+      #void-background,
+      #scroll-progress,
+      #scroll-top,
+      .void-cloud,
+      .void-fog,
+      .sinewave,
+      .particle {
+        display: none !important;
+      }
+      .cephalon-bg {
+        filter: blur(1px) saturate(0.7);
+        opacity: 0.4;
+      }
+      .cephalon-glow {
+        display: none;
+      }
+    }
+
     /* ============================= */
     /* NAVBAR                        */
     /* ============================= */
@@ -1081,27 +1110,37 @@
   </footer>
 
   <script>
+    const lowMotionMobile = window.matchMedia('(max-width: 768px)').matches;
+
     // Scroll progress bar
     const scrollProgress = document.getElementById('scroll-progress');
-    window.addEventListener('scroll', () => {
-      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const scrolled = (window.scrollY / windowHeight) * 100;
-      scrollProgress.style.width = scrolled + '%';
-    });
+    if (!lowMotionMobile && scrollProgress) {
+      window.addEventListener('scroll', () => {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (window.scrollY / windowHeight) * 100;
+        scrollProgress.style.width = scrolled + '%';
+      });
+    } else if (scrollProgress) {
+      scrollProgress.style.display = 'none';
+    }
 
     // Scroll to top button
     const scrollTopBtn = document.getElementById('scroll-top');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 400) {
-        scrollTopBtn.classList.add('visible');
-      } else {
-        scrollTopBtn.classList.remove('visible');
-      }
-    });
+    if (!lowMotionMobile && scrollTopBtn) {
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+          scrollTopBtn.classList.add('visible');
+        } else {
+          scrollTopBtn.classList.remove('visible');
+        }
+      });
 
-    scrollTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+      scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    } else if (scrollTopBtn) {
+      scrollTopBtn.style.display = 'none';
+    }
 
     // Header scroll effect
     const header = document.getElementById('header');
@@ -1145,11 +1184,13 @@
       setTimeout(() => p.remove(), 26000);
     }
 
-    // Spawn initial particles
-    for (let i = 0; i < 25; i++) {
-      setTimeout(() => spawnParticle(), i * 200);
+    if (!lowMotionMobile) {
+      // Spawn initial particles
+      for (let i = 0; i < 25; i++) {
+        setTimeout(() => spawnParticle(), i * 200);
+      }
+      setInterval(spawnParticle, 700);
     }
-    setInterval(spawnParticle, 700);
 
     // Dropdown functionality with click and hover delay
     const dropdown = document.querySelector('.dropdown');

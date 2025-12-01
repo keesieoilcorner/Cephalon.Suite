@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Warframe Enemy &amp; Damage Scaling Calculator</title>
 
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5558891993075858" crossorigin="anonymous"></script>
-
   <link rel="stylesheet" href="warframe_scaling_calculator.css" />
 </head>
 
@@ -261,63 +259,68 @@
             </div>
           </div>
 
-          <div class="ab-panel">
-            <div class="ab-panel-header">
-              <div>
-                <div class="muted">A/B presets</div>
-                <div class="ab-legend">
-                  <span class="ab-dot ab-dot-a"></span> A
-                  <span class="ab-dot ab-dot-b"></span> B
-                  <span class="muted">Save &amp; load builds to compare</span>
-                </div>
-              </div>
-              <label class="compare-toggle">
-                <input type="checkbox" id="abCompareToggle">
-                Compare A/B on plot
-              </label>
-            </div>
-
-            <div class="ab-grid">
-              <div class="ab-slot">
-                <div class="ab-slot-heading">
-                  <span class="ab-dot ab-dot-a"></span>
-                  <span class="ab-slot-title">Preset A</span>
-                  <span class="ab-slot-status" id="abStatusA">Empty</span>
-                </div>
-                <input type="text" id="abLabelA" class="ab-input" placeholder="Label (optional)">
-                <div class="ab-actions">
-                  <button class="btn btn-small" id="abSaveA">Save to A</button>
-                  <button class="btn btn-ghost btn-small" id="abLoadA">Load</button>
-                  <button class="btn btn-ghost btn-small" id="abClearA">Clear</button>
-                </div>
-              </div>
-
-              <div class="ab-slot">
-                <div class="ab-slot-heading">
-                  <span class="ab-dot ab-dot-b"></span>
-                  <span class="ab-slot-title">Preset B</span>
-                  <span class="ab-slot-status" id="abStatusB">Empty</span>
-                </div>
-                <input type="text" id="abLabelB" class="ab-input" placeholder="Label (optional)">
-                <div class="ab-actions">
-                  <button class="btn btn-small" id="abSaveB">Save to B</button>
-                  <button class="btn btn-ghost btn-small" id="abLoadB">Load</button>
-                  <button class="btn btn-ghost btn-small" id="abClearB">Clear</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="ab-actions-row">
-              <div class="ab-actions-left">
-                <button class="btn btn-small" id="abCopyAToB">Copy A -> B</button>
-                <button class="btn btn-small" id="abCopyBToA">Copy B -> A</button>
-                <button class="btn btn-small" id="abSwapPresets">Swap A/B</button>
-                <button class="btn btn-danger btn-small" id="abResetPresets">Reset presets</button>
-              </div>
-              <div class="ab-toast" id="abToast"></div>
-            </div>
-          </div>
     </div>
+
+  <div class="card ab-card">
+    <div class="ab-panel">
+      <div class="ab-panel-header">
+        <div>
+          <div class="muted">A/B presets</div>
+          <div class="ab-legend">
+            <span class="ab-dot ab-dot-a"></span> A
+            <span class="ab-dot ab-dot-b"></span> B
+            <span class="muted">Save &amp; load builds to compare</span>
+          </div>
+        </div>
+        <label class="compare-toggle">
+          <input type="checkbox" id="abCompareToggle">
+          Compare A/B on plot
+        </label>
+      </div>
+
+      <div class="ab-grid">
+        <div class="ab-slot">
+          <div class="ab-slot-heading">
+            <span class="ab-dot ab-dot-a"></span>
+            <span class="ab-slot-title">Preset A</span>
+            <span class="ab-slot-status" id="abStatusA">Empty</span>
+          </div>
+          <input type="text" id="abLabelA" class="ab-input" placeholder="Label (optional)">
+          <div class="ab-actions">
+            <button class="btn btn-small" id="abSaveA">Save to A</button>
+            <button class="btn btn-ghost btn-small" id="abLoadA">Load</button>
+            <button class="btn btn-ghost btn-small" id="abClearA">Clear</button>
+          </div>
+        </div>
+
+        <div class="ab-slot">
+          <div class="ab-slot-heading">
+            <span class="ab-dot ab-dot-b"></span>
+            <span class="ab-slot-title">Preset B</span>
+            <span class="ab-slot-status" id="abStatusB">Empty</span>
+          </div>
+          <input type="text" id="abLabelB" class="ab-input" placeholder="Label (optional)">
+          <div class="ab-actions">
+            <button class="btn btn-small" id="abSaveB">Save to B</button>
+            <button class="btn btn-ghost btn-small" id="abLoadB">Load</button>
+            <button class="btn btn-ghost btn-small" id="abClearB">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ab-actions-row">
+        <div class="ab-actions-left">
+          <button class="btn btn-small" id="abCopyAToB">Copy A -> B</button>
+          <button class="btn btn-small" id="abCopyBToA">Copy B -> A</button>
+          <button class="btn btn-ghost btn-small" id="abSwapPresets">Swap A/B</button>
+        </div>
+        <div class="ab-actions-right">
+          <button class="btn btn-danger btn-small" id="abResetPresets">Reset presets</button>
+          <div class="ab-toast" id="abToast"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
     <!-- Outputs -->
     <div class="card wipeable" id="resultCard">

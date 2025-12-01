@@ -2346,22 +2346,9 @@ function setAbPanelCollapsed(on) {
     abPanelCollapsed = !!on;
     abPanelEl.classList.toggle('ab-panel-collapsed', abPanelCollapsed);
 }
-const AB_TOP_MARGIN_PX = 60;
+const AB_TOP_MARGIN_PX = 200;
 if (abPanelEl) {
-    const abCollapseMedia = window.matchMedia('(max-width: 768px)');
-    const updateAbPanelFromScroll = () => {
-    // Keep presets visible on mobile; only collapse on larger screens
-    if (abCollapseMedia.matches) {
-        setAbPanelCollapsed(false);
-        return;
-    }
-    const y = window.scrollY || document.documentElement.scrollTop || 0;
-    setAbPanelCollapsed(y > AB_TOP_MARGIN_PX);
-    };
-    abCollapseMedia.addEventListener?.('change', updateAbPanelFromScroll);
-    window.addEventListener('scroll', updateAbPanelFromScroll, { passive: true });
-    // Run once on load
-    updateAbPanelFromScroll();
+    setAbPanelCollapsed(false);
 }
 
 // Enforce mutual exclusivity between reflective ability toggles
