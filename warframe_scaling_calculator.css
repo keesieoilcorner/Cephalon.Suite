@@ -1111,3 +1111,19 @@ body.ab-compare .compare-chips-row.ab-compare-chips-row { opacity: 1; pointer-ev
 .btn-danger:active {
     background: #991b1b;
 }
+
+.page-footer {
+    margin: 40px auto 28px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.page-footer div + div {
+    margin-top: 4px;
+}
+
+.embedded .page-footer {
+    display: none;
+}
