@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Warframe Enemy &amp; Damage Scaling Calculator</title>
 
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5558891993075858" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="warframe_scaling_calculator.css" />
 </head>
 
@@ -186,9 +187,22 @@
 
     <!-- Ad slot: below summary bar (hidden when embedded) -->
     <div class="ad-slot ad-slot-top muted" data-slot="calc-top">
-      <!-- Place AdSense code here once site is approved -->
-      <div class="ad-placeholder">Ad space (responsive)</div>
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5558891993075858"
+           data-ad-slot="REPLACE_WITH_YOUR_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
     </div>
+    <script>
+      (() => {
+        const isEmbedded = (window.self !== window.top) || new URLSearchParams(window.location.search).has('embed');
+        if (isEmbedded) return;
+        if (window.__ad_top_loaded) return;
+        window.__ad_top_loaded = true;
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      })();
+    </script>
 
     <!-- Plot card -->
     <div class="card plot-visible plot-sticky" id="plotCard">
