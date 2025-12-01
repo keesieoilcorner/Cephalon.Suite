@@ -8,7 +8,10 @@
   <link rel="stylesheet" href="warframe_scaling_calculator.css" />
 </head>
 
-<body class="no-animate">
+<body class="no-animate calc-prefade calc-prepare">
+  <div class="page-transition active" aria-hidden="true">
+    <div class="transition-sheen"></div>
+  </div>
   <div id="bgA" class="bg-layer on"></div>
   <div id="bgB" class="bg-layer"></div>
   <div class="cephalon-bg" aria-hidden="true">
@@ -1163,6 +1166,55 @@
     <div>Built for the Tenno community.</div>
   </footer>
 
+  <script>
+    (() => {
+      const transitionLayer = document.querySelector('.page-transition');
+      const transitionTargets = ['index.html', 'warframe_scaling_calculator.html'];
+      const normalizePath = (path) => path.replace(/\/index\.html$/, '/');
+      let released = false;
+
+      const releaseTransition = () => {
+        if (released || !transitionLayer) return;
+        released = true;
+        transitionLayer.classList.remove('leaving');
+        setTimeout(() => transitionLayer.classList.remove('active'), 80);
+      };
+
+      window.__releaseTransition = releaseTransition;
+      setTimeout(releaseTransition, 1200); // fallback if JS errors before entrance starts
+
+      const shouldAnimate = (link) => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || link.target === '_blank') return false;
+        return transitionTargets.some(target => href.includes(target));
+      };
+
+      const startPageTransition = (url) => {
+        if (!transitionLayer) {
+          window.location.href = url;
+          return;
+        }
+        transitionLayer.classList.add('active', 'leaving');
+        setTimeout(() => { window.location.href = url; }, 420);
+      };
+
+      document.querySelectorAll('a[href]').forEach(link => {
+        if (!shouldAnimate(link)) return;
+        const url = new URL(link.href, window.location.href);
+        const samePage = normalizePath(url.pathname) === normalizePath(window.location.pathname);
+        if (samePage) return;
+        link.addEventListener('click', evt => {
+          evt.preventDefault();
+          startPageTransition(url.href);
+        });
+      });
+
+      window.addEventListener('pageshow', () => {
+        released = false;
+        transitionLayer?.classList.remove('active', 'leaving');
+      });
+    })();
+  </script>
   <script>
     (() => {
       const header = document.getElementById('hubHeader');

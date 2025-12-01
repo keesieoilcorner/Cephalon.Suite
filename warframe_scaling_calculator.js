@@ -1,4 +1,5 @@
 let fullyInitialized = false;
+let targetPlotVisible = true;
 
 // Warframe Scaling Calculator driver.
 // Handles scaling math, plot rendering, UI wiring, and share/reset helpers.
@@ -7,6 +8,57 @@ let fullyInitialized = false;
 // Detect embed mode (iframe or ?embed) and add a body flag for CSS tweaks (e.g., hide sticky bar)
 const isEmbedded = (window.self !== window.top) || new URLSearchParams(window.location.search).has('embed');
 if (isEmbedded) document.body.classList.add('embedded');
+
+// Prepare fullscreen section entrance animation (skipped when embedded)
+function prepareSectionEntrance() {
+    if (isEmbedded) {
+        document.body.classList.remove('calc-prefade');
+        document.body.classList.add('plot-ready');
+        return;
+    }
+    const container = document.querySelector('.container');
+    const hubHeader = document.querySelector('.hub-header');
+    if (!container) {
+        document.body.classList.remove('calc-prefade');
+        return;
+    }
+    const ordered = [hubHeader, ...Array.from(container.children).filter(el => el && el.nodeType === 1)];
+    let delay = 0;
+    ordered.forEach(el => {
+        if (!el || !el.classList) return;
+        el.classList.add('calc-stagger');
+        el.style.setProperty('--stagger-delay', `${delay}ms`);
+        delay += 55;
+    });
+    document.body.classList.add('calc-prepare');
+    requestAnimationFrame(() => document.body.classList.remove('calc-prefade'));
+}
+
+function startSectionEntrance() {
+    if (isEmbedded || !document.body.classList.contains('calc-prepare')) return;
+    document.body.classList.add('calc-animate');
+    if (typeof window.__releaseTransition === 'function') {
+        window.__releaseTransition();
+        window.__releaseTransition = null;
+    }
+    setTimeout(() => {
+        document.body.classList.remove('calc-prepare');
+        document.body.classList.add('plot-ready');
+        if (targetPlotVisible && !plotVisible && !isEmbedded) {
+            requestAnimationFrame(() => {
+                triggerPlotWipe();
+                const params = readParams();
+                const toggles = readToggles();
+                applyEffectiveEnemyType(params, toggles);
+                animateTo(params, toggles, 600, { unfold: true });
+                syncPlotUi(true);
+                plotVisible = true;
+            });
+        }
+    }, 900);
+}
+
+prepareSectionEntrance();
 
 // ---------- Faction background gradients ----------
 const factionGradients = {
@@ -5041,22 +5093,28 @@ applyFromQuery();
 syncFactionStickyFromMain();
 syncDifficultyStickyFromMain();
 
-//Restoring Plot State
+// Restoring Plot State (animate on first open)
 const qp = new URLSearchParams(location.search);
-if (!qp.has("plot")) {
-    plotCard.classList.add("plot-visible"); // default: open
+targetPlotVisible = qp.has("plot") ? qp.get("plot") === "1" : true;
+
+const syncPlotUi = (visible) => {
+        plotCard.classList.toggle("plot-visible", visible);
+        document.body.classList.toggle('plot-blur-on', visible);
+        togglePlotBtn.textContent = visible ? "Hide Plot" : "Show Plot";
+};
+
+// Start collapsed; only embedded auto-opens immediately
+if (targetPlotVisible && isEmbedded) {
+        syncPlotUi(true);
+} else {
+        syncPlotUi(false);
 }
 
-togglePlotBtn.textContent = plotCard.classList.contains("plot-visible") ? "Hide Plot" : "Show Plot";
-
 let plotVisible = plotCard.classList.contains("plot-visible");
-document.body.classList.toggle('plot-blur-on', plotVisible);
 
 togglePlotBtn.addEventListener('click', () => {
         plotVisible = !plotVisible;
-        plotCard.classList.toggle('plot-visible', plotVisible);
-        togglePlotBtn.textContent = plotVisible ? 'Hide Plot' : 'Show Plot';
-        document.body.classList.toggle('plot-blur-on', plotVisible);
+        syncPlotUi(plotVisible);
 
         if (plotVisible) {
         triggerPlotWipe();
@@ -5077,6 +5135,9 @@ setFactionBackground(factionEl.value);
 // Re-enable transitions AFTER all states are applied
 requestAnimationFrame(() => {
     document.body.classList.remove("no-animate");
+    startSectionEntrance();
+    // Safety: ensure fallback if prefade somehow remained
+    document.body.classList.remove('calc-prefade');
 });
 
 let initialParams = readParams();
