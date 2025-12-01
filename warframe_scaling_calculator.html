@@ -1,0 +1,1214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Warframe Enemy &amp; Damage Scaling Calculator</title>
+
+  <link rel="stylesheet" href="warframe_scaling_calculator.css" />
+</head>
+
+<body class="no-animate">
+  <div id="bgA" class="bg-layer on"></div>
+  <div id="bgB" class="bg-layer"></div>
+  <div class="cephalon-bg" aria-hidden="true">
+    <div class="cephalon-glow"></div>
+    <div class="cephalon-scene">
+      <div class="cephalon-wrapper">
+        <div class="cube c1">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c2">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c3">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c4">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c5">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c6">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c7">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+        <div class="cube c8">
+          <div class="cube-inner">
+            <div class="face front"></div>
+            <div class="face back"></div>
+            <div class="face right"></div>
+            <div class="face left"></div>
+            <div class="face top"></div>
+            <div class="face bottom"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="blur-layer sticky-blur"></div>
+
+  <header class="hub-header" id="hubHeader">
+    <a href="index.html" class="hub-brand">
+      <img src="LogoShadedTransparentPadded.png" alt="CephalonSuite logo" />
+      <span>CephalonSuite<sup style="font-size:0.55em; margin-left:2px; opacity:0.7;">&trade;</sup></span>
+    </a>
+    <nav class="hub-menu">
+      <div class="hub-dropdown">
+        <button class="hub-dropbtn">Explore Tools &#9662;</button>
+        <div class="hub-dropdown-content">
+          <a href="warframe_tools_landing.html#scaling">Scaling Calculator</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h1>Warframe Enemy &amp; Damage Scaling Calculator</h1>
+    <div class="undertitle">Made by <a href="https://youtube.com/@KeesieOilcorner" target="_blank" rel="noopener">@KeesieOilcorner</a></div>
+
+    <!-- Summary bar -->
+    <div class="card summary-bar">
+      <div class="summary-row">
+        <div class="summary-item">
+          <div class="summary-label">Target Level</div>
+          <div class="summary-value level" id="sumTargetLevelWrap">
+            <button type="button" class="lvl-step-btn" id="lvlDownBtn">−</button>
+            <span id="sumTargetLevel" class="editable-level">-</span>
+            <button type="button" class="lvl-step-btn" id="lvlUpBtn">+</button>
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Health</div>
+          <div class="summary-value hp" id="sumHp">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Shield</div>
+          <div class="summary-value shield" id="sumShield">-</div>
+        </div>
+        <div class="summary-item fadeable hidden" id="sumOgItem">
+          <div class="summary-label">Overguard</div>
+          <div class="summary-value stat-mint" id="sumOg">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Armor DR</div>
+          <div class="summary-value dr" id="sumDR">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Total EHP</div>
+          <div class="summary-value ehp" id="sumEhp">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Enemy Damage</div>
+          <div class="summary-value dmg" id="sumDmg">-</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Scaling Damage</div>
+          <div class="summary-value stat-scaling" id="sumScaling">-</div>
+        </div>
+      </div>
+      <!--Spacer to align buttons-->
+      <div class="summary-spacer"></div>
+      <!--Share and hide plot options-->
+      <div class="summary-actions">
+          <select id="factionSticky" class="summary-select">
+            <option value="grineer">Grineer / Scaldra</option>
+            <option value="corpus">Corpus</option>
+            <option value="infested">Infested</option>
+            <option value="corrupted">Corrupted</option>
+            <option value="murmur">Murmur / Sentient / Unaffiliated</option>
+            <option value="techrot">Techrot</option>
+          </select>
+          <label class="inline-toggle" style="margin-left:8px; margin-right:4px;">
+            <input type="checkbox" id="steelPathSticky">
+            <span class="field-label">Steel Path</span>
+          </label>
+          <button id="shareBtn" class="btn btn-small">Share</button>
+          <button id="togglePlot" class="btn btn-small">Hide Plot</button>
+          <button id="resetBtn" class="btn btn-danger btn-small">Reset All</button>
+      </div>
+    </div>
+
+    <!-- Ad slot: below summary bar (hidden when embedded) -->
+    <div class="ad-slot ad-slot-top muted" data-slot="calc-top">
+      <!-- Place AdSense code here once site is approved -->
+      <div class="ad-placeholder">Ad space (responsive)</div>
+    </div>
+
+    <!-- Plot card -->
+    <div class="card plot-visible plot-sticky" id="plotCard">
+      <div class="plot-wrap">
+        <canvas id="plot"></canvas>
+      </div>
+      <div class="legend">
+        <span class="chip health" data-toggle="showBase"><i></i> Base Health/Shield</span>
+        <span class="chip health dash" data-toggle="showExDef"><i></i> Eximus (+Defenses)</span>
+        <span class="chip health dot" data-toggle="showExNoDef"><i></i> Eximus (-Defenses)</span>
+        <span class="chip overguard dash"><i></i> Eximus Overguard</span>
+        <span class="chip damage" data-toggle="showDamage"><i></i> Enemy Damage</span>
+        <span class="chip scaling" data-toggle="showScaling"><i></i> Scaling Damage</span>
+        <span class="chip ehp" data-toggle="showEHP"><i></i> EHP</span>
+      </div>
+      <div class="compare-chips-row">
+        <span class="chip comp-chip" data-faction="grineer"><i></i> Grineer / Scaldra</span>
+        <span class="chip comp-chip" data-faction="corpus"><i></i> Corpus</span>
+        <span class="chip comp-chip" data-faction="infested"><i></i> Infested</span>
+        <span class="chip comp-chip" data-faction="corrupted"><i></i> Corrupted</span>
+        <span class="chip comp-chip" data-faction="murmur"><i></i> Murmur / Sentient / Unaffiliated</span>
+        <span class="chip comp-chip" data-faction="techrot"><i></i> Techrot</span>
+      </div>
+      <div class="compare-chips-row ab-compare-chips-row">
+        <span class="chip comp-chip ab-chip" data-preset="A"><i></i> Preset A</span>
+        <span class="chip comp-chip ab-chip" data-preset="B"><i></i> Preset B</span>
+      </div>
+      <div class="muted" id="intersectionNote" style="margin-top:6px;"></div>
+          <div class="plot-actions">
+            <div class="plot-actions-left">
+              <button id="exportPlotBg" class="btn btn-small">Export PNG (background)</button>
+              <button id="exportPlotTransparent" class="btn btn-small">Export PNG (transparent)</button>
+            </div>
+            <div class="compare-panel">
+              <div class="axis-inline">
+                <label class="muted">X axis from</label>
+                <input type="number" id="xAxisFrom" min="1" placeholder="Base lvl">
+                <label class="muted">to</label>
+                <input type="number" id="xAxisTo" min="1" placeholder="Target lvl">
+              </div>
+              <div class="axis-inline">
+                <label class="muted">Y axis max</label>
+                <input type="number" id="yAxisMax" min="1" placeholder="Auto">
+              </div>
+              <div class="compare-inline">
+                <label class="compare-toggle"><input type="checkbox" id="compareModeBottom"> Compare Factions</label>
+                <select id="compareMetricBottom" class="summary-select">
+                  <option value="health">Health</option>
+                  <option value="shield">Shield</option>
+                  <option value="damage">Enemy Damage</option>
+                  <option value="ehp">EHP</option>
+                  <option value="scaling">Scaling Damage</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="ab-panel">
+            <div class="ab-panel-header">
+              <div>
+                <div class="muted">A/B presets</div>
+                <div class="ab-legend">
+                  <span class="ab-dot ab-dot-a"></span> A
+                  <span class="ab-dot ab-dot-b"></span> B
+                  <span class="muted">Save &amp; load builds to compare</span>
+                </div>
+              </div>
+              <label class="compare-toggle">
+                <input type="checkbox" id="abCompareToggle">
+                Compare A/B on plot
+              </label>
+            </div>
+
+            <div class="ab-grid">
+              <div class="ab-slot">
+                <div class="ab-slot-heading">
+                  <span class="ab-dot ab-dot-a"></span>
+                  <span class="ab-slot-title">Preset A</span>
+                  <span class="ab-slot-status" id="abStatusA">Empty</span>
+                </div>
+                <input type="text" id="abLabelA" class="ab-input" placeholder="Label (optional)">
+                <div class="ab-actions">
+                  <button class="btn btn-small" id="abSaveA">Save to A</button>
+                  <button class="btn btn-ghost btn-small" id="abLoadA">Load</button>
+                  <button class="btn btn-ghost btn-small" id="abClearA">Clear</button>
+                </div>
+              </div>
+
+              <div class="ab-slot">
+                <div class="ab-slot-heading">
+                  <span class="ab-dot ab-dot-b"></span>
+                  <span class="ab-slot-title">Preset B</span>
+                  <span class="ab-slot-status" id="abStatusB">Empty</span>
+                </div>
+                <input type="text" id="abLabelB" class="ab-input" placeholder="Label (optional)">
+                <div class="ab-actions">
+                  <button class="btn btn-small" id="abSaveB">Save to B</button>
+                  <button class="btn btn-ghost btn-small" id="abLoadB">Load</button>
+                  <button class="btn btn-ghost btn-small" id="abClearB">Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ab-actions-row">
+              <div class="ab-actions-left">
+                <button class="btn btn-small" id="abCopyAToB">Copy A -> B</button>
+                <button class="btn btn-small" id="abCopyBToA">Copy B -> A</button>
+                <button class="btn btn-small" id="abSwapPresets">Swap A/B</button>
+                <button class="btn btn-danger btn-small" id="abResetPresets">Reset presets</button>
+              </div>
+              <div class="ab-toast" id="abToast"></div>
+            </div>
+          </div>
+    </div>
+
+    <!-- Outputs -->
+    <div class="card wipeable" id="resultCard">
+      <div class="row">
+        <div class="stat stat-red">Health at Level <span id="lvlOut">100</span>: ~<span id="hpOut">-</span></div>
+        <div class="muted">Multiplier: ~<span id="hpMulOut">-</span>x</div>
+      </div>
+
+      <div id="shieldBlock" style="display:none;">
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-cyan">Shield at Level <span id="lvlOut2">100</span>: ~<span id="shOut">-</span></div>
+          <div class="muted">Multiplier: ~<span id="shMulOut">-</span>x</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-mint">Overguard at Level <span id="lvlOut3">100</span>: ~<span id="ogOut">-</span></div>
+          <div class="muted">Multiplier: ~<span id="ogMulOut">-</span>x</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-armor">
+            Armor at Level <span id="lvlOut4">100</span>: ~<span id="armorOut">-</span>
+          </div>
+          <div class="muted">DR: ~<span id="armorDROut">-</span>%</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-purple">Total EHP: ~<span id="ehpOut">-</span></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-damage">
+            Enemy Damage at Level <span id="lvlOutDmg">100</span>: ~<span id="dmgOut">-</span>
+          </div>
+          <div class="muted">Multiplier: ~<span id="dmgMulOut">-</span>x</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="stat stat-scaling">
+            Scaling Damage at Level <span id="lvlOutScaling">100</span>: ~<span id="scalingOut">-</span>
+          </div>
+          <div class="muted">Multiplier: ~<span id="scalingMulOut">-</span>x</div>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">Note: Follows piecewise + smoothstep scaling; formulas used are the latest featured on the Warframe Wiki, which are never 100% accurate past testable enemy levels.</div>
+    </div>
+
+    <!-- Comparison Outputs -->
+    <div class="card wipeable" id="compareResultCard" style="display:none;">
+      <div class="row" style="align-items:flex-start;">
+        <div>
+          <div class="stat stat-red" id="compareMetricLabel">Enemy Damage</div>
+          <div class="muted" id="compareMetricSub">Values at target level</div>
+        </div>
+      </div>
+      <div class="compare-stats-list" id="compareStatsList"></div>
+      <div class="muted" style="margin-top:10px;">Values shown per selection for the chosen comparison metric.</div>
+    </div>
+
+    <!-- Hidden checks (driven by legend chips) -->
+    <div class="card" style="display:none;">
+      <div class="checks">
+        <label><input type="checkbox" id="showBase" checked> Show Base</label>
+        <label><input type="checkbox" id="showExDef"> Show Eximus (+Defenses)</label>
+        <label><input type="checkbox" id="showExNoDef"> Show Eximus (-Defenses)</label>
+        <label><input type="checkbox" id="showDamage"> Show Enemy Damage</label>
+        <label><input type="checkbox" id="showScaling"> Show Scaling Damage</label>
+        <label><input type="checkbox" id="showEHP"> Show EHP</label>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="card">
+      <!-- Basic Enemy Parameters -->
+      <div class="section" id="sec-basic">
+        <button class="section-header">
+          <span>
+            Basic Enemy Parameters
+            <span class="hint">Level, faction & difficulty</span>
+          </span>
+          <span class="section-header-icon">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="grid">
+            <div class="field">
+              <div class="field-label" title="Enemy level at which the base stats are defined.">
+                Base Level
+                <span class="tooltip-icon" title="Enemy level at which the base HP/Shield/Armor values are taken.">?</span>
+              </div>
+              <div class="dual-input">
+                <input id="baseLevelRange" type="range" min="1" max="9999" value="1">
+                <input id="baseLevel" type="number" min="1" value="1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label" title="Target level where you want to see scaling results.">
+                Target Level
+                <span class="tooltip-icon" title="Level to which the enemy scales; used for outputs & plot range.">?</span>
+              </div>
+              <div class="dual-input">
+                <input id="targetLevelRange" type="range" min="1" max="9999" value="100">
+                <input id="targetLevel" type="number" min="1" value="100">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Faction</div>
+              <select id="faction">
+                <option value="grineer">Grineer / Scaldra</option>
+                <option value="corpus">Corpus</option>
+                <option value="infested">Infested</option>
+                <option value="corrupted">Corrupted</option>
+                <option value="murmur">Murmur / Sentient / Unaffiliated</option>
+                <option value="sentient" hidden>Legacy Sentient (compat)</option>
+                <option value="techrot">Techrot</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label" title="Steel Path multiplies enemy EHP but does not affect damage in this tool.">
+                Enemy Difficulty
+                <span class="tooltip-icon" title="Steel Path uses 2.5x HP/Shield, but enemy damage stays unchanged.">?</span>
+              </div>
+              <select id="enemyDifficulty">
+                <option value="normal">Normal</option>
+                <option value="steel">Steel Path</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enemy Stats -->
+      <div class="section" id="sec-stats">
+        <button class="section-header">
+          <span>
+            Enemy Stats
+            <span class="hint">Base HP / Shield / Armor / Damage</span>
+          </span>
+          <span class="section-header-icon">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="grid">
+            <div class="field">
+              <div class="field-label" title="Base health at Base Level.">
+                Base Health
+              </div>
+              <div class="dual-input">
+                <input id="baseHealthRange" type="range" min="1" max="20000" value="300">
+                <input id="baseHealth" type="number" min="1" value="300">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label" title="Base shield at Base Level. Ignored for factions without shield scaling.">
+                Base Shield
+              </div>
+              <div class="dual-input">
+                <input id="baseShieldRange" type="range" min="0" max="20000" value="100">
+                <input id="baseShield" type="number" min="0" value="100">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label" title="Base armor at Base Level used for EHP calculations.">
+                Base Armor (for EHP)
+                <span class="tooltip-icon" title="Armor affects only HP via Damage Reduction, capped between 200–2700 for this calculation.">?</span>
+              </div>
+              <div class="dual-input">
+                <input id="baseArmorRange" type="range" min="0" max="3000" value="0">
+                <input id="baseArmor" type="number" min="0" value="0">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label" title="Base enemy damage against Player Overguard at level 1 before scaling.">
+                Base Damage
+                <span class="tooltip-icon" title="Enemy Damage uses Impact Puncture and Slash weightings and Damage Type multiplier will be applied proportionally, this mechanic IS NOT featured in this calculator and Enemy Damage Values CAN differ ~20%.">?</span>
+              </div>
+              <div class="dual-input">
+                <input id="baseDamageRange" type="range" min="0" max="100" value="1">
+                <input id="baseDamage" type="number" min="0" value="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Eximus / special -->
+      <div class="section" id="sec-eximus">
+        <button class="section-header">
+          <span>
+            Eximus
+            <span class="hint">Toggle Eximus Scaling</span>
+          </span>
+          <span class="section-header-icon">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="grid">
+            <div class="field">
+              <div class="field-label" title="Used for (HP/EHP/Overguard), not for the base curves.">
+              </div>
+              <select id="enemyType">
+                <option value="normal">Normal</option>
+                <option value="eximus_def">Eximus (+Defenses)</option>
+                <option value="eximus_nodef">Eximus (-Defenses)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Armor Strip -->
+      <div class="section" id="sec-armorstrip">
+        <button class="section-header">
+          <span>
+            Armor Strip
+            <span class="hint">Heat, Corrosive stacks, Corrosive Projection</span>
+          </span>
+          <span class="section-header-icon">▾</span>
+        </button>
+
+        <div class="section-body">
+          <div class="grid">
+
+            <!-- Heat Toggle -->
+            <label class="inline-toggle">
+              <input type="checkbox" id="heatEnabled">
+              <span class="field-label" title="Heat status applies a 50% multiplicative armor strip.">
+                Heat Status (50%)
+              </span>
+            </label>
+
+            <!-- Corrosive Stacks -->
+            <div class="field">
+              <div class="field-label"
+                  title="Corrosive status strips up to 100% armor at 14 stacks.">
+                Corrosive Stacks
+              </div>
+              <div class="dual-input">
+                <input id="corrosiveStacksRange" type="range" min="0" max="25" step="1" value="0">
+                <input id="corrosiveStacks" type="number" min="0" max="25" value="0">
+              </div>
+            </div>
+
+            <!-- Corrosive Projection -->
+            <div class="field">
+              <div class="field-label"
+                  title="Corrosive Projection reduces armor by a percentage (multiplicative).">
+                Corrosive Projection %
+              </div>
+              <div class="dual-input">
+                <input id="cpRange" type="range" min="0" max="72" value="0">
+                <input id="cp" type="number" min="0" max="72" value="0">
+                <span class="muted">%</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Damage & scaling -->
+      <div class="section" id="sec-damage">
+        <button class="section-header">
+          <span>
+            Scaling Damage
+            <span class="hint">Enemy damage multipliers</span>
+          </span>
+          <span class="section-header-icon">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="dropdown-stack">
+            <div class="dropdown-group">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Warframe Stats</span>
+                  <span class="dropdown-hint">Placeholder for future inputs</span>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                <div class="wf-stats-row">
+                  <div class="field">
+                    <div class="field-label" title="Total Ability Strength of your build, viewable in the Arsenal. Take into account in mission buffs like Molt Augmented.">Ability Strength %</div>
+                    <div class="input-with-unit">
+                      <input id="wfAbilityStrength" type="number" min="0" step="1" value="100">
+                      <span class="muted">%</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Multiplicative Ability Damage bonus from Archon Shards.">Ability Damage %</div>
+                    <div class="input-with-unit">
+                      <input id="wfAbilityDamage" type="number" min="0" step="1" value="0">
+                      <span class="muted">%</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Your Warframe's base armor value (before buffs).">Base Armor</div>
+                    <div class="input-with-unit">
+                      <input id="wfBaseArmor" type="number" min="0" step="1" value="0">
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Armor Mods%: multiplicative armor bonus from mods/buffs (Steel Fiber, etc.). Added Armor is applied after this.">Armor Mods %</div>
+                    <div class="input-with-unit">
+                      <input id="wfArmorIncrease" type="number" min="0" step="1" value="0">
+                      <span class="muted">%</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Flat armor added from sources like Arcane Guardian or blue Archon Shards.">Added Armor</div>
+                    <div class="input-with-unit">
+                      <input id="wfArmorAdded" type="number" min="0" step="1" value="0">
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Bonus Toxin proc damage from Archon Shards.">Toxin Damage %</div>
+                    <div class="input-with-unit">
+                      <input id="wfToxinDamage" type="number" min="0" step="1" value="0">
+                      <span class="muted">%</span>
+                    </div>
+                  </div>
+                  <label class="inline-toggle wf-inline-toggle debug-toggle">
+                    <input type="checkbox" id="trueToxinEnabled">
+                    <span class="field-label" title="Treat Toxin damage as bypassing shields while still affected by armor DR.">Toxin Damage (Ignore Shields)</span>
+                  </label>
+                  <label class="inline-toggle wf-inline-toggle debug-toggle">
+                    <input type="checkbox" id="trueDamageEnabled">
+                    <span class="field-label" title="Treat EHP for Scaling Damage as HP + Overguard (ignore shields/armor).">True Damage (Ignore Armor/Shields)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Vulnerability Multipliers</span>
+                  <span class="dropdown-hint">Applies to scaled damage sources</span>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                <div class="grid">
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="atlasPetrifyEnabled">
+                    <span class="field-label" title="Can't be used on enemies with Overguard.">(Atlas) Petrify — <span class="vuln-pct" id="atlasPetrifyDisplay">50%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="calibanWrathEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard.">(Caliban) Sentient Wrath — <span class="vuln-pct" id="calibanWrathDisplay">35%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="equinoxRageEnabled">
+                    <span class="field-label" title="Day form vulnerability; speeds up enemies; can't be used on enemies with Overguard.">(Equinox) Rest & Rage — <span class="vuln-pct" id="equinoxRageDisplay">50%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="garaMassEnabled">
+                    <span class="field-label" title="Can't be used on enemies with Overguard.">(Gara) Mass Vitrify — <span class="vuln-pct" id="garaMassDisplay">50%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="garaSplinterEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard.">(Gara) Splinter Storm — <span class="vuln-pct" id="garaSplinterDisplay">35%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="jadeJudgementsEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard. Flat, not affected by Ability Strength.">(Jade) Judgements — <span class="vuln-pct" id="jadeJudgementsDisplay">50%</span> flat</span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="khoraDomeEnabled">
+                    <span class="field-label" title="Can't be used on enemies with Overguard. Flat, not affected by Ability Strength.">(Khora) Strangledome — <span class="vuln-pct" id="khoraDomeDisplay">200%</span> flat</span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="nezhaChakramEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard.">(Nezha) Blazing Chakram — <span class="vuln-pct" id="nezhaChakramDisplay">100%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="novaPrimeEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard. Flat, not affected by Ability Strength.">(Nova) Molecular Prime — <span class="vuln-pct" id="novaPrimeDisplay">100%</span> flat</span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="oraxiaEmbraceEnabled">
+                    <span class="field-label" title="Can't be used on enemies with Overguard.">(Oraxia) Webbed Embrace — <span class="vuln-pct" id="oraxiaEmbraceDisplay">50%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="qorvexWallEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard; unlimited duration.">(Qorvex) Containment Wall — <span class="vuln-pct" id="qorvexWallDisplay">25%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="yareliSeaEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard.">(Yareli) Sea Snares — <span class="vuln-pct" id="yareliSeaDisplay">200%</span></span>
+                  </label>
+                  <label class="inline-toggle">
+                    <input type="checkbox" id="yareliMerulinaEnabled">
+                    <span class="field-label" title="Can be used on enemies with Overguard. Applies a second copy of Sea Snares vulnerability when Loyal Merulina is active.">(Yareli) Loyal Merulina — +<span class="vuln-pct" id="yareliMerulinaDisplay">200%</span></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Additional Multipliers</span>
+                  <span class="dropdown-hint">Viral stacks, Summoner's Wrath</span>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                <div class="grid">
+                  <div class="field">
+                    <div class="field-label" title="Stacks of Viral or Magnetic on the enemy. Applies a final damage multiplier.">
+                      Viral/Magnetic Status Bonus
+                      <span class="tooltip-icon" title="0: 1x, 1 stack: 2x, 10 stacks: 4.25x total damage multiplier.">?</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <input id="statusStacks" type="range" min="0" max="10" value="0" step="1" style="flex:1;">
+                      <span id="statusStacksVal">0</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label" title="Radiation status stacks for Reflective Scaling. Only applies in Reflective mode.">
+                      Radiation Status Bonus
+                      <span class="tooltip-icon" title="0: 0%, 1 stack: 100%, +50%/stack to 550% (10 stacks)">&quest;</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <input id="radiationStacks" type="range" min="0" max="10" value="0" step="1" style="flex:1;">
+                      <span id="radiationStacksVal">0</span>
+                    </div>
+                  </div>
+                  <div class="field multiplier-field">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="summWrathEnabled">
+                      <span class="field-label"
+                        title="Summoner's Wrath multiplies final enemy damage as (1 + %/100).">
+                        Summoner's Wrath
+                        <span class="tooltip-icon"
+                          title="Summoner's Wrath actually functions like faction damage and double dips on status DOT damage. In this context only functions for Nekros Shadows and Damage Decoy.">?</span>
+                      </span>
+                    </label>
+
+                    <div class="dual-input">
+                      <input id="summWrathRange" type="range" min="0" max="75" value="0">
+                      <div class="input-with-unit">
+                        <input id="summWrath" type="number" min="0" value="0">
+                        <span class="muted">%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="field multiplier-field">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="roarEnabled">
+                      <span class="field-label"
+                        title="Roar multiplies final scaled damage.">
+                        Roar
+                      </span>
+                    </label>
+                    <label class="inline-toggle" style="margin:6px 0 2px 0;">
+                      <input type="checkbox" id="roarSubsume">
+                      <span class="field-label" title="Subsume Roar uses 30% base instead of 50%.">Subsume</span>
+                    </label>
+                    <div class="calc-display">
+                      <span class="muted">Value:</span>
+                      <span id="roarDisplay">50%</span>
+                    </div>
+                  </div>
+                  <div class="field multiplier-field">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="nourishEnabled">
+                      <span class="field-label" title="Nourish multiplies outgoing damage.">
+                        Nourish
+                      </span>
+                    </label>
+                    <label class="inline-toggle" style="margin:6px 0 2px 0;">
+                      <input type="checkbox" id="nourishSubsume">
+                      <span class="field-label" title="Subsume Nourish uses 45% base instead of 75%.">Subsume</span>
+                    </label>
+                    <div class="calc-display">
+                      <span class="muted">Value:</span>
+                      <span id="nourishDisplay">75%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group" data-scaling-group="reflective">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Reflective Scaling Damage</span>
+                  <span class="dropdown-hint">Reflection of enemy damage and summoned enemies</span>
+                </div>
+                <div class="dropdown-controls">
+                  <label class="inline-toggle mode-inline-toggle">
+                    <input type="radio" name="scalingMode" id="scalingModeReflective" value="reflective" checked>
+                  </label>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                    <div class="field">
+                      <div class="field-label">Select Reflective Ability</div>
+                      <select id="reflectiveSelect">
+                        <option value="none" selected disabled>Choose an ability</option>
+                        <option value="cold_ward">(Chroma) Elemental Ward (Cold)</option>
+                        <option value="reverse_rotor">(Gyre) Reverse Rotorswell</option>
+                        <option value="damage_decoy">(Loki) Damage Decoy</option>
+                        <option value="shatter_shield">(Mesa) Shatter Shield</option>
+                        <option value="nekros">(Nekros) Shadows of the Dead</option>
+                        <option value="absorb">(Nyx) Absorb</option>
+                        <option value="mind_control">(Nyx) Mind Control</option>
+                        <option value="mallet">(Octavia) Mallet</option>
+                        <option value="mesmer_skin">(Revenant) Mesmer Skin</option>
+                        <option value="iron_skin">(Rhino) Iron Skin + Iron Shrapnel</option>
+                        <option value="thorns">(Titania) Thorns</option>
+                        <option value="link">(Trinity) Link</option>
+                        <option value="accuse">(Xaku) Accuse</option>
+                      </select>
+                    </div>
+                  <div class="grid">
+                  <div class="field multiplier-field reflective-option" data-reflective-key="mind_control">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="mindControlEnabled">
+                      <span class="field-label"
+                        title="Mind Control damage multiplier is calculated as (1 + %/100). When enabled, the effective % is at least 750%.">
+                        Mind Control
+                      </span>
+                    </label>
+
+                    <div class="dual-input">
+                      <input id="mindControlRange" type="range" min="750" max="5000" value="750">
+                      <div class="input-with-unit">
+                        <input id="mindControl" type="number" min="0" value="0">
+                        <span class="muted">%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="accuse">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="accuseEnabled">
+                      <span class="field-label" title="(Xaku) Accuse uses enemy damage as its base and scales with viral/status, Nourish, Roar, radiation stacks, and vulnerability multipliers.">
+                        Accuse
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="iron_skin">
+                    <div class="field-label" title="Max rank Iron Skin. Overguard = (1200 * Strength) + (2.5 * Strength * Total Armor) + absorbed enemy damage. Strength = Ability Strength% / 100.">
+                      Iron Skin + Iron Shrapnel
+                    </div>
+                    <div class="calc-display">
+                      <span class="muted">Overguard:</span>
+                      <span id="ironSkinDisplay">-</span>
+                    </div>
+                    <div class="calc-display" style="margin-top:6px;">
+                      <label class="inline-toggle">
+                        <input type="checkbox" id="ironShrapnelEnabled">
+                        <span class="field-label" title="Recasting with Iron Shrapnel detonates Iron Skin for its remaining Overguard as Puncture damage.">
+                          Iron Shrapnel
+                        </span>
+                      </label>
+                      <div>
+                        <span class="muted">Detonation:</span>
+                        <span id="ironShrapnelDisplay">-</span>
+                      </div>
+                    </div>
+                    <div class="calc-display" style="margin-top:8px;">
+                      <div class="field-label" title="Puncture vulnerability from Magnus Destruct. Multiplies damage by (1 + stacks * destruct%).">
+                        Magnus Destruct
+                      </div>
+                      <div class="dual-input">
+                        <input id="destructRank" type="range" min="0" max="5" step="1" value="5">
+                        <div class="input-with-unit">
+                          <input id="destructStacks" type="number" min="0" value="0">
+                          <span class="muted">stacks</span>
+                        </div>
+                      </div>
+                      <div class="muted" style="margin-top:4px;">
+                        Rank: <span id="destructRankDisplay">65%</span>
+                      </div>
+                    </div>
+                    <div class="field multiplier-field reflective-option" data-reflective-key="absorb">
+                      <label class="inline-toggle">
+                        <input type="checkbox" id="absorbEnabled">
+                        <span class="field-label" title="Nyx Absorb reflects incoming damage. Scales with enemy damage, viral/status, Ability Damage, Roar, and vulnerability multipliers.">
+                          (Nyx) Absorb
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="nekros">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="nekrosEnabled">
+                      <span class="field-label"
+                        title="Nekros Shadows of the Dead damage multiplier. Multiplies final enemy damage as a flat factor.">
+                        Shadows of the Dead
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Multiplier:</span>
+                      <span id="nekrosMultDisplay">1.50x</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="mallet">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="malletEnabled">
+                      <span class="field-label" title="(Octavia) Mallet reflects enemy damage: 2.5x * Ability Strength, and is scaled by Ability Damage, Roar, viral/status, and vulnerability multipliers.">
+                        Mallet
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Mallet Damage Reflection:</span>
+                      <span id="malletDisplay">2.50x</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="damage_decoy">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="damageDecoyEnabled">
+                      <span class="field-label"
+                        title="Damage Decoy multiplies final enemy damage as (1 + %/100).">
+                        Damage Decoy
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Value:</span>
+                      <span id="damageDecoyDisplay">350% (3.50x)</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="cold_ward">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="coldWardEnabled">
+                      <span class="field-label" title="Elemental Ward (Cold) reflection scaling.">
+                        Elemental Ward (Cold)
+                      </span>
+                    </label>
+                  <div class="calc-display">
+                    <span class="muted">Multiplier:</span>
+                      <span id="coldWardDisplay">3.00x</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="link">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="linkEnabled">
+                      <span class="field-label" title="Link reflection. Fixed 75%, does not scale with Ability Strength.">
+                        Link
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Multiplier:</span>
+                      <span id="linkDisplay">0.75x</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="reverse_rotor">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="reverseRotorEnabled">
+                      <span class="field-label" title="Reverse Rotorswell reflection. Base 35%, scales with Ability Strength. Ignores Nourish and Summoner's Wrath.">
+                        Reverse Rotorswell
+                      </span>
+                    </label>
+
+                  <div class="calc-display">
+                    <span class="muted">Multiplier:</span>
+                    <span id="reverseRotorDisplay">35%</span>
+                  </div>
+                </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="mesmer_skin">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="mesmerSkinEnabled">
+                      <span class="field-label" title="Mesmer Skin reflection. Fixed 100%, does not scale with Ability Strength.">
+                        Mesmer Skin
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Multiplier:</span>
+                      <span id="mesmerSkinDisplay">100%</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="thorns">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="thornsEnabled">
+                      <span class="field-label" title="Thorns reflection. Fixed 50%, does not scale with Ability Strength.">
+                        Thorns
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Multiplier:</span>
+                      <span id="thornsDisplay">50%</span>
+                    </div>
+                  </div>
+
+                  <div class="field multiplier-field reflective-option" data-reflective-key="shatter_shield">
+                    <label class="inline-toggle">
+                      <input type="checkbox" id="shatterShieldEnabled">
+                      <span class="field-label" title="Shatter Shield reflection. Fixed 100%, does not scale with Ability Strength.">
+                        Shatter Shield
+                      </span>
+                    </label>
+
+                    <div class="calc-display">
+                      <span class="muted">Multiplier:</span>
+                      <span id="shatterShieldDisplay">100%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group" data-scaling-group="level">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Level Scaling Damage</span>
+                  <span class="dropdown-hint">Select level-scaling abilities</span>
+                </div>
+                <div class="dropdown-controls">
+                  <label class="inline-toggle mode-inline-toggle">
+                    <input type="radio" name="scalingMode" id="scalingModeLevel" value="level">
+                  </label>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                <div class="field">
+                  <div class="field-label">Level scaling source</div>
+                  <select id="levelScalingSelect">
+                    <option value="none" selected disabled>Choose an ability</option>
+                    <option value="feast">(Grendel) Feast</option>
+                    <option value="flechette_orb">(Vauban) Flechette Orb</option>
+                    <option value="photon_strike">(Vauban) Photon Strike</option>
+                    <option value="grasp_of_lohk">(Xaku) Grasp of Lohk</option>
+                  </select>
+                </div>
+                <div class="calc-display flechette-row" id="flechetteDisplayRow" style="display:none;">
+                  <span class="muted">
+                    <span id="levelScalingLabel">Flechette Damage</span>
+                    <span id="levelScalingTooltip" class="tooltip-icon" title="50% critical chance, 2.0x critical multiplier, ~5% status chance, and a forced Puncture proc; hits enemies within 10m. Crit damage can scale with Tenacious Bond or Arcane Crepuscular; crit chance can be boosted with Arcane Avenger; can headshot for additional multipliers.">?</span>
+                  </span>
+                  <span id="flechetteDisplay">-</span>
+                  <label class="inline-toggle vauban-toggle">
+                    <input type="checkbox" id="vaubanPassiveEnabled">
+                    <span class="field-label" title="Multiplies Flechette Orb damage by 1.25x.">Vauban Passive</span>
+                  </label>
+                  <label class="inline-toggle overdriver-toggle">
+                    <input type="checkbox" id="overdriverEnabled">
+                    <span class="field-label field-label-inline" title="Adds Overdriver buff: 25% * Ability Strength (uncapped).">
+                      Overdriver Damage <span class="stat-inline" id="overdriverDisplay">25%</span>
+                    </span>
+                  </label>
+                  <label class="inline-toggle grasp-toggle" style="display:none;">
+                    <input type="checkbox" id="graspVastUntimeEnabled">
+                    <span class="field-label field-label-inline" title="Adds Vast Untime bonus (50% multiplicative, not scaled by Ability Strength).">
+                      Vast Untime <span class="stat-inline" id="graspVastUntimeDisplay">0%</span>
+                    </span>
+                  </label>
+                  <label class="inline-toggle grasp-toggle" style="display:none;">
+                    <input type="checkbox" id="graspUntimeRiftEnabled">
+                    <span class="field-label" title="Sets Vast Untime bonus to 125% (ignores Ability Strength).">Untime Rift</span>
+                  </label>
+                  <div class="field feast-toggle" style="display:none; margin-top:8px;">
+                    <div class="field-label" title="Enemies regurgitated (max 5). Uses target level for scaling.">Feast enemies</div>
+                    <div class="input-with-unit">
+                      <input id="feastEnemyCount" type="range" min="1" max="5" value="1" step="1">
+                      <span class="muted" id="feastEnemyCountVal">1 enemies</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group" data-scaling-group="health">
+              <button class="dropdown-header" type="button">
+                <div class="dropdown-text">
+                  <span class="dropdown-title">Health Scaling Damage</span>
+                  <span class="dropdown-hint">Select health-scaling abilities</span>
+                </div>
+                <div class="dropdown-controls">
+                  <label class="inline-toggle mode-inline-toggle">
+                    <input type="radio" name="scalingMode" id="scalingModeHealth" value="health">
+                  </label>
+                </div>
+                <span class="dropdown-icon">&#9662;</span>
+              </button>
+              <div class="dropdown-body">
+                  <div class="field">
+                    <div class="field-label">Health scaling source</div>
+                    <select id="healthScalingSelect">
+                      <option value="none" selected disabled>Choose an ability</option>
+                    <option value="ew_toxin">(Chroma) Elemental Ward (Toxin)</option>
+                    <option value="regurgitate">(Grendel) Regurgitate</option>
+                    <option value="smite">(Oberon) Smite</option>
+                    <option value="reave">(Revenant) Reave</option>
+                    <option value="reap_sow">(Sevagoth) Reap / Sow</option>
+                    <option value="energy_vampire">(Trinity) Energy Vampire</option>
+                  </select>
+                 </div>
+                 <div class="calc-display flechette-row" id="healthScalingDisplayRow" style="display:none;">
+                   <span class="muted">
+                     <span id="healthScalingLabel">Health Scaling Damage</span>
+                     <span id="healthScalingTooltip" class="tooltip-icon" title="Oberon Smite percentage-based damage. Single Target ignores armor/shields/overguard; AoE ignores shields but respects armor DR.">?</span>
+                   </span>
+                   <span id="healthScalingDisplay">-</span>
+                   <label class="inline-toggle smite-toggle" style="display:none;">
+                     <input type="checkbox" id="smiteSingleEnabled">
+                     <span class="field-label">Smite Single Target</span>
+                   </label>
+                   <label class="inline-toggle smite-toggle" style="display:none;">
+                     <input type="checkbox" id="smiteAoEEnabled">
+                     <span class="field-label">Smite AoE</span>
+                   </label>
+                   <label class="inline-toggle smite-toggle" style="display:none;">
+                     <input type="checkbox" id="smiteSubsumeEnabled">
+                     <span class="field-label">Subsume</span>
+                   </label>
+                   <label class="inline-toggle smite-toggle mfd-toggle" style="display:none;">
+                     <input type="checkbox" id="smiteMfdEnabled">
+                     <span class="field-label field-label-inline" title="Marked for Death bonus (scales with Ability Strength: base 75%, caps at 150%).">
+                       Marked for Death <span class="stat-inline" id="smiteMfdDisplay">75%</span>
+                     </span>
+                   </label>
+                   <label class="inline-toggle regurgitate-toggle" style="display:none;">
+                     <input type="checkbox" id="regurgitateGastroEnabled">
+                     <span class="field-label" title="Gastro Augment: removes Toxin typing so toxin shard bonuses no longer apply.">
+                       Gastro Augment
+                     </span>
+                   </label>
+                   <label class="inline-toggle reave-toggle" style="display:none;">
+                     <input type="checkbox" id="reaveEnthrallEnabled">
+                     <span class="field-label" title="Use Thrall-empowered drain (40% base instead of 8%).">Enthrall</span>
+                   </label>
+                   <div class="field reap-toggle" style="display:none; margin-top:8px;">
+                     <div class="field-label" title="Enemies packed within 4m of each other trigger extra blasts on the others (target is excluded from its own blast).">Enemies within 4m</div>
+                     <div class="input-with-unit">
+                       <input id="reapEnemyCount" type="number" min="1" max="20" value="1">
+                       <span class="muted">enemies</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    (() => {
+      const header = document.getElementById('hubHeader');
+      const root = document.documentElement;
+      const isEmbedded = (window.self !== window.top) || new URLSearchParams(window.location.search).has('embed');
+
+      if (isEmbedded) document.body.classList.add('embedded');
+
+      const updateNavOffset = () => {
+        if (!header) return;
+        const offset = isEmbedded ? 0 : header.offsetHeight + 8;
+        root.style.setProperty('--nav-height', `${offset}px`);
+      };
+
+      updateNavOffset();
+      window.addEventListener('resize', updateNavOffset);
+      window.addEventListener('scroll', () => {
+        if (!header || isEmbedded) return;
+        header.classList.toggle('scrolled', window.scrollY > 50);
+        updateNavOffset();
+      });
+
+      const dropdown = document.querySelector('.hub-dropdown');
+      const dropbtn = document.querySelector('.hub-dropbtn');
+      let closeTimeout;
+
+      if (dropdown && dropbtn) {
+        dropbtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+          clearTimeout(closeTimeout);
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove('open');
+            clearTimeout(closeTimeout);
+          }
+        });
+
+        dropdown.addEventListener('mouseleave', () => {
+          closeTimeout = setTimeout(() => dropdown.classList.remove('open'), 1200);
+        });
+
+        dropdown.addEventListener('mouseenter', () => {
+          clearTimeout(closeTimeout);
+        });
+      }
+    })();
+  </script>
+  <script src="warframe_scaling_calculator.js"></script>
+</body>
+</html>
+
