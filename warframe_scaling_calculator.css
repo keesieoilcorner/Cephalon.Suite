@@ -215,6 +215,23 @@ body.embedded .calc-stagger {
     50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
 }
 
+/* Mobile: trim heavy backdrop effects but keep the cube scene */
+@media (max-width: 768px) {
+    .page-transition,
+    .page-transition::before,
+    .page-transition .transition-sheen {
+        opacity: 0 !important;
+        animation: none !important;
+        transition: none !important;
+        background: none;
+    }
+    .page-transition { pointer-events: none !important; }
+    .blur-layer { display: none !important; }
+    .bg-layer { transition: none; }
+    .cephalon-bg { filter: blur(1px) saturate(0.6); opacity: 0.35; }
+    .cephalon-glow { display: none; }
+}
+
 /* Hub navigation */
 .hub-header {
     position: sticky;
@@ -854,6 +871,47 @@ body.ab-compare .compare-chips-row.ab-compare-chips-row { opacity: 1; pointer-ev
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+/* Mobile layout: make summary bar non-sticky and stack neatly */
+@media (max-width: 768px) {
+    .summary-bar {
+        position: static;
+        top: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 12px;
+    }
+    .summary-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    .summary-item.fadeable {
+        max-width: none;
+    }
+    .summary-value.level {
+        gap: 4px;
+    }
+    .summary-spacer { display: none; }
+    .summary-actions {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+    .summary-actions select,
+    .summary-actions button,
+    .summary-actions label {
+        flex: 1 1 48%;
+        min-width: 140px;
+    }
+    .summary-actions button {
+        text-align: center;
+    }
 }
 
 .lvl-step-btn {
