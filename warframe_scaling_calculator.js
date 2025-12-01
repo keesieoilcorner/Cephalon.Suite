@@ -5231,10 +5231,11 @@ document.getElementById("resetBtn").addEventListener("click", () => {
     document.body.classList.remove('ab-compare');
     setCompareCardsVisible(false);
 
-    // Align plot visibility flags to the DOM
-    plotVisible = plotCard.classList.contains("plot-visible");
-    document.body.classList.toggle('plot-blur-on', plotVisible);
-    togglePlotBtn.textContent = plotVisible ? "Hide Plot" : "Show Plot";
+    // Align plot visibility flags and keep plot shown after reset
+    plotVisible = true;
+    plotCard.classList.add("plot-visible");
+    document.body.classList.add('plot-blur-on');
+    togglePlotBtn.textContent = "Hide Plot";
 
     updateMindControlEnabledState();
     updateNekrosEnabledState();
