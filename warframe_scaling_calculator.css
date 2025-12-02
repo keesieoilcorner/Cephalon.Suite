@@ -914,6 +914,14 @@ body.ab-compare .compare-chips-row.ab-compare-chips-row { opacity: 1; pointer-ev
     }
 }
 
+/* Phones in landscape: disable sticky summary bar */
+@media (max-height: 520px) and (orientation: landscape) {
+    .summary-bar {
+        position: static;
+        top: auto;
+    }
+}
+
 .lvl-step-btn {
     width: 22px;
     height: 22px;
