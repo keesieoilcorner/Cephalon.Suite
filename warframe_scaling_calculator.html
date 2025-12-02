@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Warframe Enemy &amp; Damage Scaling Calculator</title>
-  
+
   <link rel="icon" type="image/png" href="LogoShadedTransparentPadded.png" />
   <link rel="canonical" href="https://cephalonsuite.tools/warframe_scaling_calculator.html" />
   <link rel="stylesheet" href="warframe_scaling_calculator.css" />
@@ -1088,6 +1088,27 @@
                     <span class="field-label field-label-inline" title="Adds Overdriver buff: 25% * Ability Strength (uncapped).">
                       Overdriver Damage <span class="stat-inline" id="overdriverDisplay">25%</span>
                     </span>
+                  </label>
+                  <label class="inline-toggle flechette-extra" style="display:none;">
+                    <input type="checkbox" id="arachneEnabled">
+                    <span class="field-label field-label-inline" title="Arcane Arachne: wall-latch damage bonus.">
+                      Arcane Arachne <span class="stat-inline" id="arachneDisplay">25%</span>
+                    </span>
+                  </label>
+                  <div class="field flechette-extra" style="display:none; margin-top:8px;">
+                    <div class="field-label" title="Arcane Arachne rank (0-5): 25%-150% damage bonus.">Arcane Arachne Rank</div>
+                    <div class="input-with-unit">
+                      <input id="arachneRank" type="range" min="0" max="5" value="0" step="1">
+                      <span class="muted" id="arachneRankVal">Rank 0 (+25%)</span>
+                    </div>
+                  </div>
+                  <label class="inline-toggle flechette-extra" style="display:none;">
+                    <input type="checkbox" id="holsterAmpEnabled">
+                    <span class="field-label" title="Holster Amp: +60% damage while holstered.">Holster Amp</span>
+                  </label>
+                  <label class="inline-toggle flechette-extra" style="display:none;">
+                    <input type="checkbox" id="vigorousSwapEnabled">
+                    <span class="field-label" title="Vigorous Swap: +165% damage after swapping weapons.">Vigorous Swap</span>
                   </label>
                   <label class="inline-toggle grasp-toggle" style="display:none;">
                     <input type="checkbox" id="graspVastUntimeEnabled">

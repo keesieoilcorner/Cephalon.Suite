@@ -997,7 +997,7 @@ const dom = {
     target: pick(['targetLevel','targetLevelRange','faction','enemyType','enemyDifficulty']),
     // UI controls/toggles
     controls: pick(['togglePlot','shareBtn','showBase','showExDef','showExNoDef','showDamage','showScaling','showEHP','exportPlotBg','exportPlotTransparent','factionSticky','steelPathSticky','compareModeBottom','compareMetricBottom','xAxisFrom','xAxisTo','yAxisMax']),
-    levelScaling: pick(['levelScalingSelect','vaubanPassiveEnabled','overdriverEnabled','feastEnemyCount']),
+    levelScaling: pick(['levelScalingSelect','vaubanPassiveEnabled','overdriverEnabled','feastEnemyCount','arachneEnabled','arachneRank','holsterAmpEnabled','vigorousSwapEnabled']),
     healthScaling: pick(['healthScalingSelect','smiteSingleEnabled','smiteAoEEnabled','smiteSubsumeEnabled','smiteMfdEnabled','reaveEnthrallEnabled','reapEnemyCount','regurgitateGastroEnabled']),
     reflectiveSelect: pick(['reflectiveSelect']),
     ab: pick(['abCompareToggle','abLabelA','abLabelB','abSaveA','abSaveB','abLoadA','abLoadB','abClearA','abClearB','abCopyAToB','abCopyBToA','abSwapPresets','abResetPresets','abStatusA','abStatusB','abToast']),
@@ -1188,6 +1188,12 @@ const malletDisplayEl = document.getElementById('malletDisplay');
 const vaubanPassiveEl = document.getElementById('vaubanPassiveEnabled');
 const overdriverEnabledEl = document.getElementById('overdriverEnabled');
 const overdriverDisplayEl = document.getElementById('overdriverDisplay');
+const arachneEnabledEl = document.getElementById('arachneEnabled');
+const arachneRankEl = document.getElementById('arachneRank');
+const arachneDisplayEl = document.getElementById('arachneDisplay');
+const arachneRankValEl = document.getElementById('arachneRankVal');
+const holsterAmpEnabledEl = document.getElementById('holsterAmpEnabled');
+const vigorousSwapEnabledEl = document.getElementById('vigorousSwapEnabled');
 const graspVastUntimeEl = document.getElementById('graspVastUntimeEnabled');
 const graspUntimeRiftEl = document.getElementById('graspUntimeRiftEnabled');
 const graspVastUntimeDisplayEl = document.getElementById('graspVastUntimeDisplay');
@@ -1229,6 +1235,18 @@ if (feastEnemyCountEl) {
     feastEnemyCountEl.addEventListener('input', () => { syncFeastLabel(); scheduleHandleChange('input'); });
     feastEnemyCountEl.addEventListener('change', () => { syncFeastLabel(); scheduleHandleChange('change'); });
     syncFeastLabel();
+}
+if (arachneRankEl) {
+    const syncArachneLabel = () => {
+    const rank = clampArachneRank(arachneRankEl.value);
+    const pct = getArcaneArachnePct(rank);
+    arachneRankEl.value = rank;
+    if (arachneRankValEl) arachneRankValEl.textContent = `Rank ${rank} (+${pct.toFixed(0)}%)`;
+    if (arachneDisplayEl) arachneDisplayEl.textContent = `${pct.toFixed(0)}%`;
+    };
+    arachneRankEl.addEventListener('input', () => { syncArachneLabel(); scheduleHandleChange('input'); });
+    arachneRankEl.addEventListener('change', () => { syncArachneLabel(); scheduleHandleChange('change'); });
+    syncArachneLabel();
 }
 
 function setScalingModeFromGroup(name) {
@@ -1465,6 +1483,10 @@ const queryFields = {
     mallet:         { els: [malletEnabledEl], def: false, bool: true },
     vaubanPassive:  { els: [vaubanPassiveEl], def: false, bool: true },
     overdriver:     { els: [overdriverEnabledEl], def: false, bool: true },
+    arachne:        { els: [arachneEnabledEl], def: false, bool: true },
+    arachneRank:    { els: [arachneRankEl], def: 0 },
+    holsterAmp:     { els: [holsterAmpEnabledEl], def: false, bool: true },
+    vigorousSwap:   { els: [vigorousSwapEnabledEl], def: false, bool: true },
     vastUntime:     { els: [graspVastUntimeEl], def: false, bool: true },
     untimeRift:     { els: [graspUntimeRiftEl], def: false, bool: true },
     smiteSingle:    { els: [smiteSingleEnabledEl], def: false, bool: true },
@@ -1656,6 +1678,16 @@ function getLevelScalingSpec(key) {
     return levelScalingSpecs[key] || null;
 }
 
+function clampArachneRank(raw) {
+    const n = Number(raw);
+    const safe = Number.isFinite(n) ? n : 0;
+    return Math.max(0, Math.min(5, safe));
+}
+
+function getArcaneArachnePct(rawRank) {
+    return 25 * (clampArachneRank(rawRank) + 1);
+}
+
 function feastDamageAtLevel(params, level) {
     const spec = getLevelScalingSpec('feast');
     if (!spec) return 0;
@@ -1714,12 +1746,18 @@ function levelScalingDamageAtLevel(params, level) {
     const overdriverMul = (spec.allowOverdriver && params.overdriverEnabled)
         ? 1 + 0.25 * Math.max(0, (params.abilityStrengthPct || 0)) / 100
         : 1;
+    const isFlechette = params.levelScaling === 'flechette_orb';
+    const arachneMul = (isFlechette && params.arachneEnabled)
+        ? 1 + getArcaneArachnePct(params.arachneRank) / 100
+        : 1;
+    const holsterAmpMul = (isFlechette && params.holsterAmpEnabled) ? 1.6 : 1;
+    const vigorousSwapMul = (isFlechette && params.vigorousSwapEnabled) ? 2.65 : 1;
     let vastUntimeMul = 1;
     if (spec.showVastUntime) {
     const vastPct = params.untimeRiftEnabled ? 125 : (params.vastUntimeEnabled ? 50 : 0);
     vastUntimeMul = 1 + Math.max(0, vastPct) / 100;
     }
-    return base * strengthMul * lvlMul * abilityDamageMul * roarMul * nourishMul * statusMul * vaubanMul * overdriverMul * vastUntimeMul;
+    return base * strengthMul * lvlMul * abilityDamageMul * roarMul * nourishMul * statusMul * vaubanMul * overdriverMul * vastUntimeMul * arachneMul * holsterAmpMul * vigorousSwapMul;
 }
 
 function updateLevelScalingUI(params) {
@@ -1741,10 +1779,22 @@ function updateLevelScalingUI(params) {
     const overdriverPct = 25 * Math.max(0, (params.abilityStrengthPct || 0)) / 100;
     overdriverDisplayEl.textContent = `${overdriverPct.toFixed(0)}%`;
     }
+    const arachneRank = clampArachneRank(params.arachneRank);
+    const arachnePct = getArcaneArachnePct(params.arachneRank);
+    if (arachneDisplayEl) {
+    arachneDisplayEl.textContent = `${arachnePct.toFixed(0)}%`;
+    }
+    if (arachneRankValEl) {
+    arachneRankValEl.textContent = `Rank ${arachneRank} (+${arachnePct.toFixed(0)}%)`;
+    }
+    if (arachneRankEl) {
+    arachneRankEl.value = arachneRank;
+    }
     // Vauban / Overdriver toggle visibility
     const showVauban = isLevelScaling && spec?.allowVauban;
     const showOverdriver = isLevelScaling && spec?.allowOverdriver;
     const showFeast = isLevelScaling && params.levelScaling === 'feast';
+    const showFlechetteExtras = isLevelScaling && params.levelScaling === 'flechette_orb';
     document.querySelectorAll('.vauban-toggle').forEach(el => {
     el.style.display = showVauban ? '' : 'none';
     });
@@ -1753,6 +1803,9 @@ function updateLevelScalingUI(params) {
     });
     document.querySelectorAll('.feast-toggle').forEach(el => {
     el.style.display = showFeast ? '' : 'none';
+    });
+    document.querySelectorAll('.flechette-extra').forEach(el => {
+    el.style.display = showFlechetteExtras ? '' : 'none';
     });
     if (showFeast && trueToxinEnabledEl) {
     trueToxinEnabledEl.checked = true;
@@ -2037,6 +2090,9 @@ if (wfArmorIncreaseEl) {
 }
 if (vaubanPassiveEl) vaubanPassiveEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (overdriverEnabledEl) overdriverEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
+if (arachneEnabledEl) arachneEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
+if (holsterAmpEnabledEl) holsterAmpEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
+if (vigorousSwapEnabledEl) vigorousSwapEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (graspVastUntimeEl) graspVastUntimeEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (graspUntimeRiftEl) graspUntimeRiftEl.addEventListener('change', () => {
     if (graspUntimeRiftEl.checked && graspVastUntimeEl) graspVastUntimeEl.checked = true;
@@ -3834,6 +3890,10 @@ function readParams() {
     trueDamageEnabled: !!trueDamageEnabledEl.checked,
     vaubanPassive: !!vaubanPassiveEl?.checked,
     overdriverEnabled: !!overdriverEnabledEl?.checked,
+    arachneEnabled: !!arachneEnabledEl?.checked,
+    arachneRank: clampArachneRank(arachneRankEl?.value),
+    holsterAmpEnabled: !!holsterAmpEnabledEl?.checked,
+    vigorousSwapEnabled: !!vigorousSwapEnabledEl?.checked,
     vastUntimeEnabled: !!graspVastUntimeEl?.checked,
     untimeRiftEnabled: !!graspUntimeRiftEl?.checked,
     healthScaling: healthScalingSelectEl?.value || 'none',
@@ -5111,6 +5171,9 @@ fitCanvas();
 loadAbPresetsFromStorage();
 updateAbUi();
 
+// Capture the pristine state (before applying share/query overrides) for resets
+initialShareState = buildShareState({ includeDefaults: true });
+
 applyFromQuery();
 syncFactionStickyFromMain();
 syncDifficultyStickyFromMain();
@@ -5221,8 +5284,6 @@ currentBlend = {
 
 currentMixE = 1;
 drawImmediate(currentBlend, 1);
-
-initialShareState = buildShareState({ includeDefaults: true });
 
 // ------ RESET BUTTON ------ //
 document.getElementById("resetBtn").addEventListener("click", () => {
