@@ -757,6 +757,10 @@ body.embedded .summary-bar {
     gap:8px;
     align-items:center;
 }
+.eximus-compare-toggles {
+    flex-wrap: wrap;
+    gap: 12px;
+}
 .axis-inline {
     display:flex;
     align-items:center;

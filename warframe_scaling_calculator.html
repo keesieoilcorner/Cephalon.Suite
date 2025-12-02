@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Warframe Enemy &amp; Damage Scaling Calculator</title>
-
+  
   <link rel="icon" type="image/png" href="LogoShadedTransparentPadded.png" />
   <link rel="canonical" href="https://cephalonsuite.tools/warframe_scaling_calculator.html" />
   <link rel="stylesheet" href="warframe_scaling_calculator.css" />
@@ -257,6 +257,11 @@
                   <option value="ehp">EHP</option>
                   <option value="scaling">Scaling Damage</option>
                 </select>
+              </div>
+              <div class="compare-inline eximus-compare-toggles">
+                <label class="compare-toggle"><input type="checkbox" id="compareShowBase" checked> Base</label>
+                <label class="compare-toggle"><input type="checkbox" id="compareShowExDef" checked> Eximus +Def</label>
+                <label class="compare-toggle"><input type="checkbox" id="compareShowExNoDef" checked> Eximus -Def</label>
               </div>
             </div>
           </div>
@@ -1288,7 +1293,6 @@
   <script src="warframe_scaling_calculator.js"></script>
 </body>
 </html>
-
 
 
 

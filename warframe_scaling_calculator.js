@@ -208,7 +208,10 @@ function getCompareSignature(params) {
     params.destructRank,
     params.destructStacks,
     params.absorbEnabled,
-    params.regurgitateGastroEnabled
+    params.regurgitateGastroEnabled,
+    compareShowBaseEl?.checked ? 1 : 0,
+    compareShowExDefEl?.checked ? 1 : 0,
+    compareShowExNoDefEl?.checked ? 1 : 0
     ].join('|');
 }
 function formatStatNumber(v) {
@@ -1392,6 +1395,9 @@ const exportPlotBgBtn = exportPlotBg;
 const exportPlotTransparentBtn = exportPlotTransparent;
 const compareModeEl = compareModeBottom;
 const compareMetricEl = compareMetricBottom;
+const compareShowBaseEl = document.getElementById('compareShowBase');
+const compareShowExDefEl = document.getElementById('compareShowExDef');
+const compareShowExNoDefEl = document.getElementById('compareShowExNoDef');
 function getCompareChips() { return Array.from(document.querySelectorAll('.comp-chip[data-faction]')); }
 
 // Central map for fields that participate in sharing/reset/query restore.
@@ -2299,6 +2305,10 @@ if (compareMetricEl) {
     scheduleHandleChange('change');
     });
 }
+[compareShowBaseEl, compareShowExDefEl, compareShowExNoDefEl].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', () => scheduleHandleChange('change'));
+});
 getCompareChips().forEach(chip => {
     chip.addEventListener('click', () => {
     toggleCompareChip(chip);
@@ -2815,26 +2825,39 @@ function buildComparisonSeries(params, { trackMaxY = true } = {}) {
     }
     const diffMul = difficultyFactor(params.enemyDifficulty);
     const metric = (compareMetricEl?.value || 'health');
+    const eximusComparable = metric === 'health' || metric === 'shield' || metric === 'ehp';
+    const showBase = eximusComparable ? !!compareShowBaseEl?.checked : true;
+    const showExDef = eximusComparable ? !!compareShowExDefEl?.checked : false;
+    const showExNoDef = eximusComparable ? !!compareShowExNoDefEl?.checked : false;
     const selectedFactions = getSelectedComparisonFactions();
     const factions = [];
     selectedFactions.forEach(f => {
     const info = compareLegendInfo(f);
-    const vals = new Array(N);
+    const baseVals = new Array(N);
+    const exDefVals = eximusComparable ? new Array(N) : null;
+    const exNoDefVals = eximusComparable ? new Array(N) : null;
     for (let i=0;i<N;i++){
         const lvl = xs[i];
-        let v = 0;
         if (metric === 'health') {
-        if (params.enemyType === 'eximus_def') v = healthEximusDefAt(lvl, baseLevel, f, params.baseHealth);
-        else if (params.enemyType === 'eximus_nodef') v = healthEximusNoDefAt(lvl, baseLevel, f, params.baseHealth);
-        else v = healthAt(lvl, baseLevel, f, params.baseHealth);
-        v *= diffMul;
+        baseVals[i] = healthAt(lvl, baseLevel, f, params.baseHealth) * diffMul;
+        exDefVals[i] = healthEximusDefAt(lvl, baseLevel, f, params.baseHealth) * diffMul;
+        exNoDefVals[i] = healthEximusNoDefAt(lvl, baseLevel, f, params.baseHealth) * diffMul;
         } else if (metric === 'shield') {
-        v = shieldAt(lvl, baseLevel, f, params.baseShield) * diffMul;
+        baseVals[i] = shieldAt(lvl, baseLevel, f, params.baseShield) * diffMul;
+        if (eximusComparable) {
+            exDefVals[i] = shieldEximusAt(lvl, baseLevel, f, params.baseShield) * diffMul;
+            exNoDefVals[i] = 0;
+        }
         } else if (metric === 'damage') {
         const lvlMul = damageMultiplier(lvl, baseLevel, f);
-        v = params.baseDamage * lvlMul;
+        baseVals[i] = params.baseDamage * lvlMul;
         } else if (metric === 'ehp') {
-        v = ehpAtLevel(lvl, { ...params, faction: f });
+        const baseParams = { ...params, faction: f };
+        baseVals[i] = ehpAtLevel(lvl, { ...baseParams, enemyType: 'normal' });
+        if (eximusComparable) {
+            exDefVals[i] = ehpAtLevel(lvl, { ...baseParams, enemyType: 'eximus_def' });
+            exNoDefVals[i] = ehpAtLevel(lvl, { ...baseParams, enemyType: 'eximus_nodef' });
+        }
         } else if (metric === 'scaling') {
         const paramsForFaction = { ...params, faction: f };
         const vulnMul = vulnerabilityMultiplier(paramsForFaction);
@@ -2844,14 +2867,19 @@ function buildComparisonSeries(params, { trackMaxY = true } = {}) {
                 * damageMultiplier(lvl, baseLevel, f)
                 * difficultyFactor(params.enemyDifficulty);
             const { dmg: ironSkinDmg } = ironSkinDetonationDamage(paramsForFaction, lvl, { vulnMul, enemyDamageOverride: enemyDamageAtLevel });
-            v = ironSkinDmg;
+            baseVals[i] = ironSkinDmg;
         } else {
-            v = scalingDamageSample(paramsForFaction, lvl, { vulnMul, scalingMul: scaleMul });
+            baseVals[i] = scalingDamageSample(paramsForFaction, lvl, { vulnMul, scalingMul: scaleMul });
         }
         }
-        vals[i] = v;
     }
-    factions.push({ faction: f, label: `${metricLabels[metric]} - ${info.label}`, color: info.color, dash: info.dash, vals });
+    if (showBase) factions.push({ faction: f, label: `${metricLabels[metric]} - ${info.label}`, color: info.color, dash: info.dash, vals: baseVals });
+    if (eximusComparable && showExDef) {
+        factions.push({ faction: `${f}-exdef`, label: `${info.label} (Eximus +Def)`, color: info.color, dash: [8,6], vals: exDefVals });
+    }
+    if (eximusComparable && showExNoDef) {
+        factions.push({ faction: `${f}-exnodef`, label: `${info.label} (Eximus -Def)`, color: info.color, dash: [2,6], vals: exNoDefVals });
+    }
     });
 
     // Smooth the Y-axis to avoid jarring resizes when toggling factions.
