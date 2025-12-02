@@ -232,6 +232,11 @@ body.embedded .calc-stagger {
     .cephalon-glow { display: none; }
 }
 
+/* Mobile landscape: hide sticky blur overlay to avoid covering content */
+@media (max-height: 520px) and (orientation: landscape) {
+    body.plot-blur-on .blur-layer { display: none !important; }
+}
+
 /* Hub navigation */
 .hub-header {
     position: sticky;
