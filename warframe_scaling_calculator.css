@@ -1,4 +1,4 @@
-:root { --nav-height: 82px; }
+:root { --nav-height: 82px; --summary-height: 140px; }
 
 html, body { height: 100%; margin: 0; }
 body {
@@ -600,7 +600,7 @@ body.ab-compare .compare-chips-row {
 }
 .plot-sticky {
     position: sticky;
-    top: 96px;
+    top: calc(var(--nav-height, 0px) + var(--summary-height, 140px) + 12px);
     z-index: 950;
     background: rgba(31,41,55,0.92);
 }

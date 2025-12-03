@@ -1264,23 +1264,29 @@
   <script>
     (() => {
       const header = document.getElementById('hubHeader');
+      const summaryBar = document.querySelector('.summary-bar');
       const root = document.documentElement;
       const isEmbedded = (window.self !== window.top) || new URLSearchParams(window.location.search).has('embed');
 
       if (isEmbedded) document.body.classList.add('embedded');
 
-      const updateNavOffset = () => {
-        if (!header) return;
-        const offset = isEmbedded ? 0 : header.offsetHeight + 8;
-        root.style.setProperty('--nav-height', `${offset}px`);
+      const updateStickyOffsets = () => {
+        if (header) {
+          const offset = isEmbedded ? 0 : header.offsetHeight + 8;
+          root.style.setProperty('--nav-height', `${offset}px`);
+        }
+        if (summaryBar) {
+          root.style.setProperty('--summary-height', `${summaryBar.offsetHeight}px`);
+        }
       };
 
-      updateNavOffset();
-      window.addEventListener('resize', updateNavOffset);
+      updateStickyOffsets();
+      window.addEventListener('resize', updateStickyOffsets);
       window.addEventListener('scroll', () => {
-        if (!header || isEmbedded) return;
-        header.classList.toggle('scrolled', window.scrollY > 50);
-        updateNavOffset();
+        if (header && !isEmbedded) {
+          header.classList.toggle('scrolled', window.scrollY > 50);
+        }
+        updateStickyOffsets();
       });
 
       const dropdown = document.querySelector('.hub-dropdown');
