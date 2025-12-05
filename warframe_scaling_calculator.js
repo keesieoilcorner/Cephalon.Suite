@@ -468,6 +468,11 @@ function armorDamageReduction(netArmor) {
     return Math.max(0, Math.min(0.9, dr));
 }
 
+function applyArmorDR(val, armorDR, { isTrueDamage = false } = {}) {
+    if (isTrueDamage) return val;
+    return val * (1 - Math.max(0, Math.min(0.9, armorDR || 0)));
+}
+
 // Calculating Armor Strip Multiplier
 function armorStripMultiplier({ heat, corrosiveStacks, cpPct }) {
     // Heat = multiplicative 50%
@@ -610,10 +615,6 @@ function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     // Current HP at level (ignore shields/OG for both; AoE ignores shields as per toxin-like)
     const hp = healthAt(level, params.baseLevel, faction, baseHealth);
 
-    // Armor DR for AoE (keep armor), ignore for main (true damage)
-    const armorInfo = scaledArmorWithStrip(level, params);
-    const armorDR = armorInfo.dr;
-
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
@@ -627,7 +628,7 @@ function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     const aoeDamageRaw = params.smiteAoEEnabled ? (hp * diffMul * aoePct) : 0;
 
     const mainDamage = mainDamageRaw * statusMul * roarMul * abilityDamageMul * mfd.markMul;
-    const aoeDamage = params.smiteAoEEnabled ? (aoeDamageRaw * statusMul * roarMul * abilityDamageMul * (1 - armorDR)) : 0;
+    const aoeDamage = params.smiteAoEEnabled ? (aoeDamageRaw * statusMul * roarMul * abilityDamageMul) : 0;
 
     return { main: mainDamage, aoe: aoeDamage, pctMain: mainPct, pctAoe: aoePct, mfdPct: mfd.markPct * 100 };
 }
@@ -676,7 +677,7 @@ function reaveDamageAtLevel(params, level, baseHealth, faction) {
     return { val: dmg, pct: effPct };
 }
 
-function reapSowDamageAtLevel(params, level, baseHealth, baseShield, faction) {
+function reapSowDamageAtLevel(params, level, baseHealth, baseShield, faction, { globalVuln = 1 } = {}) {
     const spec = getHealthScalingSpec('reap_sow');
     if (!spec) {
     return { total: 0, trueDamage: 0, blastDamage: 0, pct: 0, vulnPct: 0, blastHits: 0 };
@@ -701,7 +702,7 @@ function reapSowDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     const enemyCount = Math.max(1, isFinite(enemyCountRaw) ? enemyCountRaw : 1);
     const blastHits = Math.max(0, enemyCount - 1);
 
-    const buffMul = statusMul * roarMul * abilityDamageMul * vulnMul;
+    const buffMul = statusMul * roarMul * abilityDamageMul * vulnMul * globalVuln;
     const rawTrue = hp * basePct;
     const trueDamage = rawTrue * buffMul;
 
@@ -1666,7 +1667,7 @@ const levelScalingSpecs = {
     usesAbilityDamage: true,
     usesStatus: true,
     usesStrength: true,
-    usesToxin: true,
+    usesToxin: false,
     levelScale: "custom",
     showVastUntime: false,
     allowVauban: false,
@@ -1764,6 +1765,7 @@ function updateLevelScalingUI(params) {
     if (!flechetteDisplayRowEl) return;
     const spec = getLevelScalingSpec(params.levelScaling);
     const isLevelScaling = params.scalingMode === 'level' && !!spec;
+    const armorDR = isLevelScaling ? scaledArmorWithStrip(params.targetLevel, params).dr : 0;
     flechetteDisplayRowEl.style.display = isLevelScaling ? '' : 'none';
     if (isLevelScaling && levelScalingLabelEl) {
     levelScalingLabelEl.textContent = spec.label;
@@ -1772,7 +1774,8 @@ function updateLevelScalingUI(params) {
     levelScalingTooltipEl.title = spec.tooltip || '';
     }
     if (isLevelScaling && flechetteDisplayEl) {
-    const dmg = levelScalingDamageAtLevel(params, params.targetLevel);
+    const dmgRaw = levelScalingDamageAtLevel(params, params.targetLevel);
+    const dmg = applyArmorDR(dmgRaw, armorDR);
     flechetteDisplayEl.textContent = formatStatNumber(dmg);
     }
     if (isLevelScaling && overdriverDisplayEl) {
@@ -1826,6 +1829,7 @@ function updateHealthScalingUI(params) {
     if (!healthScalingDisplayRowEl) return;
     const spec = getHealthScalingSpec(params.healthScaling);
     const isHealthScaling = params.scalingMode === 'health' && !!spec;
+    const armorDR = isHealthScaling ? scaledArmorWithStrip(params.targetLevel, params).dr : 0;
     if (trueDamageEnabledEl) trueDamageEnabledEl.disabled = false;
     if (trueToxinEnabledEl) trueToxinEnabledEl.disabled = false;
     healthScalingDisplayRowEl.style.display = isHealthScaling ? '' : 'none';
@@ -1916,7 +1920,8 @@ function updateHealthScalingUI(params) {
     if (trueDamageEnabledEl) trueDamageEnabledEl.checked = false;
     if (trueToxinEnabledEl) trueToxinEnabledEl.checked = !regurgitateGastroEnabledEl?.checked;
     const reg = regurgitateDamageAt(params);
-    if (healthScalingDisplayEl) healthScalingDisplayEl.textContent = `${formatStatNumber(reg.val)} dmg`;
+    const regFinal = applyArmorDR(reg.val, armorDR);
+    if (healthScalingDisplayEl) healthScalingDisplayEl.textContent = `${formatStatNumber(regFinal)} dmg`;
     } else if (healthScalingDisplayEl) {
     healthScalingDisplayEl.textContent = '-';
     }
@@ -1931,30 +1936,35 @@ function updateHealthScalingUI(params) {
 function scalingDamageSample(params, lvl, { vulnMul = null, scalingMul = null } = {}) {
     const effectiveVuln = vulnMul == null ? vulnerabilityMultiplier(params) : vulnMul;
     const effectiveScalingMul = scalingMul == null ? scalingMultiplierFromParams(params, { useNourish: true }) : scalingMul;
+    const armorDR = scaledArmorWithStrip(lvl, params).dr;
 
     if (params.scalingMode === 'level') {
     const spec = getLevelScalingSpec(params.levelScaling);
-    return spec ? levelScalingDamageAtLevel(params, lvl) * effectiveVuln : 0;
+    if (!spec) return 0;
+    const scaled = levelScalingDamageAtLevel(params, lvl) * effectiveVuln;
+    return applyArmorDR(scaled, armorDR);
     }
     if (params.scalingMode === 'health') {
     if (params.healthScaling === 'smite') {
         const smite = smiteDamageAtLevel(params, lvl, params.baseHealth, params.baseShield, params.faction);
-        return (smite.main + smite.aoe) * effectiveVuln;
+        const mainVal = smite.main * effectiveVuln;
+        const aoeVal = applyArmorDR(smite.aoe * effectiveVuln, armorDR);
+        return mainVal + aoeVal;
     } else if (params.healthScaling === 'reave') {
         const reave = reaveDamageAtLevel(params, lvl, params.baseHealth, params.faction);
         return reave.val * effectiveVuln;
     } else if (params.healthScaling === 'reap_sow') {
-        const reap = reapSowDamageAtLevel(params, lvl, params.baseHealth, params.baseShield, params.faction);
-        return reap.total * effectiveVuln;
+        const reap = reapSowDamageAtLevel(params, lvl, params.baseHealth, params.baseShield, params.faction, { globalVuln: effectiveVuln });
+        return reap.total;
     } else if (params.healthScaling === 'ew_toxin') {
         const ew = elementalWardToxinDamageAt(params, lvl);
-    return ew * effectiveVuln;
+    return applyArmorDR(ew * effectiveVuln, armorDR);
     } else if (params.healthScaling === 'energy_vampire') {
         const ev = energyVampireDamageAt(params, lvl, params.baseHealth, params.faction);
         return ev.val * effectiveVuln;
     } else if (params.healthScaling === 'regurgitate') {
         const reg = regurgitateDamageAt(params);
-        return reg.val * effectiveVuln;
+        return applyArmorDR(reg.val * effectiveVuln, armorDR);
     }
     return 0;
     }
@@ -4153,7 +4163,8 @@ const {
     if (params.scalingMode === 'level') {
     const spec = getLevelScalingSpec(params.levelScaling);
     if (spec) {
-        const scaled = levelScalingDamageAtLevel(params, targetLevel) * vulnMul;
+        const scaledRaw = levelScalingDamageAtLevel(params, targetLevel) * vulnMul;
+        const scaled = applyArmorDR(scaledRaw, armorDR);
         scalingVal = scaled;
         scalingMulVal = spec.base > 0 ? (scaled / spec.base) : 0;
     } else {
@@ -4209,19 +4220,21 @@ const {
     } else if (params.scalingMode === 'health') {
     if (params.healthScaling === 'smite') {
         const smite = smiteDamageAtLevel(params, targetLevel, baseHealth, baseShield, faction);
-        scalingVal = (smite.main + smite.aoe) * vulnMul;
+        const mainVal = smite.main * vulnMul;
+        const aoeVal = applyArmorDR(smite.aoe * vulnMul, armorDR);
+        scalingVal = mainVal + aoeVal;
         scalingMulVal = 0;
     } else if (params.healthScaling === 'reave') {
         const reave = reaveDamageAtLevel(params, targetLevel, baseHealth, faction);
         scalingVal = reave.val * vulnMul;
         scalingMulVal = 0;
     } else if (params.healthScaling === 'reap_sow') {
-        const reap = reapSowDamageAtLevel(params, targetLevel, baseHealth, baseShield, faction);
-        scalingVal = reap.total * vulnMul;
+        const reap = reapSowDamageAtLevel(params, targetLevel, baseHealth, baseShield, faction, { globalVuln: vulnMul });
+        scalingVal = reap.total;
         scalingMulVal = 0;
     } else if (params.healthScaling === 'ew_toxin') {
         const ew = elementalWardToxinDamageAt(params, targetLevel);
-        scalingVal = ew * vulnMul;
+        scalingVal = applyArmorDR(ew * vulnMul, armorDR);
         scalingMulVal = 0;
     } else if (params.healthScaling === 'energy_vampire') {
         const ev = energyVampireDamageAt(params, targetLevel, baseHealth, faction);
@@ -4229,7 +4242,7 @@ const {
         scalingMulVal = 0;
     } else if (params.healthScaling === 'regurgitate') {
         const reg = regurgitateDamageAt(params);
-        scalingVal = reg.val * vulnMul;
+        scalingVal = applyArmorDR(reg.val * vulnMul, armorDR);
         scalingMulVal = 0;
     } else {
         scalingVal = 0;
