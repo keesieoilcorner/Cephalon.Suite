@@ -473,6 +473,14 @@ function applyArmorDR(val, armorDR, { isTrueDamage = false } = {}) {
     return val * (1 - Math.max(0, Math.min(0.9, armorDR || 0)));
 }
 
+function toxinDotFromInitial(initialToxinFinal, params, { toxinEnabled = true } = {}) {
+    if (!toxinEnabled || initialToxinFinal <= 0) return 0;
+    const roarBase = params.roarSubsume ? 0.3 : 0.5;
+    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const toxinShardMul = 1 + Math.max(0, (params.toxinDamagePct || 0)) / 100;
+    return initialToxinFinal * 0.5 * roarMul * toxinShardMul * 6;
+}
+
 // Calculating Armor Strip Multiplier
 function armorStripMultiplier({ heat, corrosiveStacks, cpPct }) {
     // Heat = multiplicative 50%
@@ -659,8 +667,7 @@ function regurgitateDamageAt(params) {
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
-    const toxinShardMul = params.regurgitateGastroEnabled ? 1 : (1 + Math.max(0, (params.toxinDamagePct || 0)) / 100);
-    const dmg = baseDmg * abilityDamageMul * roarMul * statusMul * vulnerabilityMultiplier(params) * toxinShardMul;
+    const dmg = baseDmg * abilityDamageMul * roarMul * statusMul * vulnerabilityMultiplier(params);
     return { val: dmg, base: baseDmg };
 }
 
@@ -1699,9 +1706,8 @@ function feastDamageAtLevel(params, level) {
     const abilityDamageMul = spec.usesAbilityDamage ? (1 + Math.max(0, (params.abilityDamagePct || 0)) / 100) : 1;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
-    const toxinShardMul = spec.usesToxin ? (1 + Math.max(0, (params.toxinDamagePct || 0)) / 100) : 1;
     const statusMul = spec.usesStatus ? statusDamageMultiplier(params.statusStacks) : 1;
-    return base * sumTerm * abilityDamageMul * roarMul * toxinShardMul * statusMul;
+    return base * sumTerm * abilityDamageMul * roarMul * statusMul;
 }
 
 function elementalWardToxinDamageAt(params, level) {
@@ -1723,10 +1729,9 @@ function elementalWardToxinDamageAt(params, level) {
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
-    const toxinShardMul = 1 + Math.max(0, (params.toxinDamagePct || 0)) / 100;
     const statusMul = statusDamageMultiplier(params.statusStacks);
 
-    return spec.basePct * hp * abilityDamageMul * roarMul * toxinShardMul * statusMul;
+    return spec.basePct * hp * abilityDamageMul * roarMul * statusMul;
 }
 
 function levelScalingDamageAtLevel(params, level) {
@@ -1774,9 +1779,13 @@ function updateLevelScalingUI(params) {
     levelScalingTooltipEl.title = spec.tooltip || '';
     }
     if (isLevelScaling && flechetteDisplayEl) {
-    const dmgRaw = levelScalingDamageAtLevel(params, params.targetLevel);
-    const dmg = applyArmorDR(dmgRaw, armorDR);
-    flechetteDisplayEl.textContent = formatStatNumber(dmg);
+    const initialRaw = levelScalingDamageAtLevel(params, params.targetLevel);
+    let total = applyArmorDR(initialRaw, armorDR);
+    if (params.levelScaling === 'feast') {
+        const dot = toxinDotFromInitial(initialRaw, params);
+        total += applyArmorDR(dot, armorDR);
+    }
+    flechetteDisplayEl.textContent = formatStatNumber(total);
     }
     if (isLevelScaling && overdriverDisplayEl) {
     const overdriverPct = 25 * Math.max(0, (params.abilityStrengthPct || 0)) / 100;
@@ -1920,8 +1929,11 @@ function updateHealthScalingUI(params) {
     if (trueDamageEnabledEl) trueDamageEnabledEl.checked = false;
     if (trueToxinEnabledEl) trueToxinEnabledEl.checked = !regurgitateGastroEnabledEl?.checked;
     const reg = regurgitateDamageAt(params);
-    const regFinal = applyArmorDR(reg.val, armorDR);
-    if (healthScalingDisplayEl) healthScalingDisplayEl.textContent = `${formatStatNumber(regFinal)} dmg`;
+    const regInitial = reg.val;
+    const regFinal = applyArmorDR(regInitial, armorDR);
+    const regDot = toxinDotFromInitial(regInitial, params, { toxinEnabled: !regurgitateGastroEnabledEl?.checked });
+    const regTotal = regFinal + applyArmorDR(regDot, armorDR);
+    if (healthScalingDisplayEl) healthScalingDisplayEl.textContent = `${formatStatNumber(regTotal)} dmg (incl DoT)`;
     } else if (healthScalingDisplayEl) {
     healthScalingDisplayEl.textContent = '-';
     }
@@ -1941,8 +1953,13 @@ function scalingDamageSample(params, lvl, { vulnMul = null, scalingMul = null } 
     if (params.scalingMode === 'level') {
     const spec = getLevelScalingSpec(params.levelScaling);
     if (!spec) return 0;
-    const scaled = levelScalingDamageAtLevel(params, lvl) * effectiveVuln;
-    return applyArmorDR(scaled, armorDR);
+    const scaledRaw = levelScalingDamageAtLevel(params, lvl) * effectiveVuln;
+    let total = applyArmorDR(scaledRaw, armorDR);
+    if (params.levelScaling === 'feast') {
+        const dot = toxinDotFromInitial(scaledRaw, params);
+        total += applyArmorDR(dot, armorDR);
+    }
+    return total;
     }
     if (params.scalingMode === 'health') {
     if (params.healthScaling === 'smite') {
@@ -1958,13 +1975,19 @@ function scalingDamageSample(params, lvl, { vulnMul = null, scalingMul = null } 
         return reap.total;
     } else if (params.healthScaling === 'ew_toxin') {
         const ew = elementalWardToxinDamageAt(params, lvl);
-    return applyArmorDR(ew * effectiveVuln, armorDR);
+    const initialRaw = ew * effectiveVuln;
+    const initialFinal = applyArmorDR(initialRaw, armorDR);
+    const dot = toxinDotFromInitial(initialRaw, params);
+    return initialFinal + applyArmorDR(dot, armorDR);
     } else if (params.healthScaling === 'energy_vampire') {
         const ev = energyVampireDamageAt(params, lvl, params.baseHealth, params.faction);
         return ev.val * effectiveVuln;
     } else if (params.healthScaling === 'regurgitate') {
         const reg = regurgitateDamageAt(params);
-        return applyArmorDR(reg.val * effectiveVuln, armorDR);
+    const initialRaw = reg.val * effectiveVuln;
+    const initialFinal = applyArmorDR(initialRaw, armorDR);
+    const dot = toxinDotFromInitial(initialRaw, params, { toxinEnabled: !params.regurgitateGastroEnabled });
+        return initialFinal + applyArmorDR(dot, armorDR);
     }
     return 0;
     }
@@ -4164,9 +4187,13 @@ const {
     const spec = getLevelScalingSpec(params.levelScaling);
     if (spec) {
         const scaledRaw = levelScalingDamageAtLevel(params, targetLevel) * vulnMul;
-        const scaled = applyArmorDR(scaledRaw, armorDR);
-        scalingVal = scaled;
-        scalingMulVal = spec.base > 0 ? (scaled / spec.base) : 0;
+        let total = applyArmorDR(scaledRaw, armorDR);
+        if (params.levelScaling === 'feast') {
+        const dot = toxinDotFromInitial(scaledRaw, params);
+        total += applyArmorDR(dot, armorDR);
+        }
+        scalingVal = total;
+        scalingMulVal = spec.base > 0 ? (total / spec.base) : 0;
     } else {
         scalingVal = 0;
         scalingMulVal = 0;
@@ -4234,7 +4261,10 @@ const {
         scalingMulVal = 0;
     } else if (params.healthScaling === 'ew_toxin') {
         const ew = elementalWardToxinDamageAt(params, targetLevel);
-        scalingVal = applyArmorDR(ew * vulnMul, armorDR);
+        const initialRaw = ew * vulnMul;
+        const initialFinal = applyArmorDR(initialRaw, armorDR);
+        const dot = toxinDotFromInitial(initialRaw, params);
+        scalingVal = initialFinal + applyArmorDR(dot, armorDR);
         scalingMulVal = 0;
     } else if (params.healthScaling === 'energy_vampire') {
         const ev = energyVampireDamageAt(params, targetLevel, baseHealth, faction);
@@ -4242,7 +4272,10 @@ const {
         scalingMulVal = 0;
     } else if (params.healthScaling === 'regurgitate') {
         const reg = regurgitateDamageAt(params);
-        scalingVal = applyArmorDR(reg.val * vulnMul, armorDR);
+        const initialRaw = reg.val * vulnMul;
+        const initialFinal = applyArmorDR(initialRaw, armorDR);
+        const dot = toxinDotFromInitial(initialRaw, params, { toxinEnabled: !params.regurgitateGastroEnabled });
+        scalingVal = initialFinal + applyArmorDR(dot, armorDR);
         scalingMulVal = 0;
     } else {
         scalingVal = 0;
