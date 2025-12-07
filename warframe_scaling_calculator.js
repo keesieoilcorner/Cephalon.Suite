@@ -663,12 +663,25 @@ function regurgitateDamageAt(params) {
     if (!spec) return { val: 0, base: 0 };
     const strengthMul = Math.max(0, (params.abilityStrengthPct || 0) / 100);
     const baseDmg = spec.baseDamage * strengthMul;
+    const level = Math.max(1, params.targetLevel || params.baseLevel || 1);
+    const { baseLevel, baseHealth, faction, enemyType } = params;
+    const diffMul = difficultyFactor(params.enemyDifficulty);
+    let hp = 0;
+    if (enemyType === 'eximus_def') {
+    hp = healthEximusDefAt(level, baseLevel, faction, baseHealth);
+    } else if (enemyType === 'eximus_nodef') {
+    hp = healthEximusNoDefAt(level, baseLevel, faction, baseHealth);
+    } else {
+    hp = healthAt(level, baseLevel, faction, baseHealth);
+    }
+    hp *= diffMul;
+    const hpBonus = 0.10 * hp; // 10% enemy max HP added before multipliers
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
-    const dmg = baseDmg * abilityDamageMul * roarMul * statusMul * vulnerabilityMultiplier(params);
-    return { val: dmg, base: baseDmg };
+    const dmg = (baseDmg + hpBonus) * abilityDamageMul * roarMul * statusMul * vulnerabilityMultiplier(params);
+    return { val: dmg, base: baseDmg + hpBonus };
 }
 
 function reaveDamageAtLevel(params, level, baseHealth, faction) {
@@ -1616,7 +1629,7 @@ const healthScalingSpecs = {
     },
     regurgitate: {
     label: "(Grendel) Regurgitate",
-    tooltip: "Regurgitate: 2000 base Toxin damage * Strength; scales with Ability Damage, Roar, viral/status, vulnerability multipliers, and toxin shards (disabled if Gastro).",
+    tooltip: "Regurgitate: 2000 base Toxin damage * Strength + 10% enemy max HP; scales with Ability Damage, Roar, viral/status, vulnerability multipliers; toxin shards only affect the DoT (disabled if Gastro).",
     baseDamage: 2000
     },
     energy_vampire: {
