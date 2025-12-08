@@ -610,6 +610,16 @@ function getMfdBonus(strengthPct) {
     return { markPct, markMul: 1 + markPct };
 }
 
+function applyMfdBonus(baseDamage, params, hpCap) {
+    if (!baseDamage || baseDamage <= 0 || !params?.smiteMfdEnabled) return { total: baseDamage, bonus: 0, mfdPct: 0 };
+    const { markPct } = getMfdBonus(params.abilityStrengthPct || 0);
+    const cap = Math.max(0, hpCap || 0);
+    if (markPct <= 0 || cap === 0) return { total: baseDamage, bonus: 0, mfdPct: 0 };
+    const bonusRaw = baseDamage * markPct;
+    const bonusCapped = Math.min(bonusRaw, cap);
+    return { total: baseDamage + bonusCapped, bonus: bonusCapped, mfdPct: markPct * 100 };
+}
+
 function getRoarStrengthPct(params) {
     if (!params) return 0;
     const derived = params.roarAbilityStrengthPct;
@@ -647,18 +657,19 @@ function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     const roarStrength = getRoarStrengthPct(params);
     const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
-    const mfd = (params.smiteMfdEnabled && params.smiteSingleEnabled)
-        ? getMfdBonus(params.abilityStrengthPct || 0)
-        : { markPct: 0, markMul: 1 };
     const diffMul = difficultyFactor(params.enemyDifficulty);
 
     const mainDamageRaw = params.smiteSingleEnabled ? (hp * diffMul * mainPct) : 0;
     const aoeDamageRaw = params.smiteAoEEnabled ? (hp * diffMul * aoePct) : 0;
 
-    const mainDamage = mainDamageRaw * statusMul * roarMul * abilityDamageMul * mfd.markMul;
+    const baseMainOut = mainDamageRaw * statusMul * roarMul * abilityDamageMul;
+    const mfdApplied = (params.smiteMfdEnabled && params.smiteSingleEnabled)
+        ? applyMfdBonus(baseMainOut, params, hp * diffMul)
+        : { total: baseMainOut, bonus: 0, mfdPct: 0 };
+    const mainDamage = mfdApplied.total;
     const aoeDamage = params.smiteAoEEnabled ? (aoeDamageRaw * statusMul * roarMul * abilityDamageMul) : 0;
 
-    return { main: mainDamage, aoe: aoeDamage, pctMain: mainPct, pctAoe: aoePct, mfdPct: mfd.markPct * 100 };
+    return { main: mainDamage, aoe: aoeDamage, pctMain: mainPct, pctAoe: aoePct, mfdPct: mfdApplied.mfdPct };
 }
 
 function energyVampireDamageAt(params, level, baseHealth, faction) {
@@ -672,11 +683,11 @@ function energyVampireDamageAt(params, level, baseHealth, faction) {
     const roarStrength = getRoarStrengthPct(params);
     const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
-    const mfd = (params.smiteMfdEnabled)
-        ? getMfdBonus(params.abilityStrengthPct || 0)
-        : { markPct: 0, markMul: 1 };
-    const dmg = hp * pct * abilityDamageMul * roarMul * statusMul * mfd.markMul;
-    return { val: dmg, pct, mfdPct: mfd.markPct * 100 };
+    const baseOut = hp * pct * abilityDamageMul * roarMul * statusMul;
+    const mfdApplied = params.smiteMfdEnabled
+        ? applyMfdBonus(baseOut, params, hp)
+        : { total: baseOut, bonus: 0, mfdPct: 0 };
+    return { val: mfdApplied.total, pct, mfdPct: mfdApplied.mfdPct };
 }
 
 function regurgitateDamageAt(params) {
