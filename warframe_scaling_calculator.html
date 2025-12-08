@@ -593,7 +593,7 @@
         <button class="section-header">
           <span>
             Scaling Damage
-            <span class="hint">Enemy damage multipliers</span>
+            <span class="hint">Sources of scaling damage and build stats</span>
           </span>
           <span class="section-header-icon">▾</span>
         </button>
@@ -1269,7 +1269,7 @@
       });
     })();
   </script>
-  <script>
+    <script>
     (() => {
       const header = document.getElementById('hubHeader');
       const summaryBar = document.querySelector('.summary-bar');
@@ -1278,28 +1278,25 @@
 
       if (isEmbedded) document.body.classList.add('embedded');
 
-      const updateStickyOffsets = () => {
-        if (header) {
-          const offset = isEmbedded ? 0 : header.offsetHeight + 8;
-          root.style.setProperty('--nav-height', `${offset}px`);
-        }
-        if (summaryBar) {
-          root.style.setProperty('--summary-height', `${summaryBar.offsetHeight}px`);
-        }
+      const setStickyVars = () => {
+        const navH = header ? header.offsetHeight : 0;
+        const sumH = summaryBar ? summaryBar.offsetHeight : 0;
+        root.style.setProperty('--nav-height', `${navH}px`);
+        root.style.setProperty('--summary-height', `${sumH}px`);
       };
+      setStickyVars();
+      window.addEventListener('resize', setStickyVars);
 
-      updateStickyOffsets();
-      window.addEventListener('resize', updateStickyOffsets);
-      window.addEventListener('scroll', () => {
-        if (header && !isEmbedded) {
+      if (header && !isEmbedded) {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+        window.addEventListener('scroll', () => {
           header.classList.toggle('scrolled', window.scrollY > 50);
+        });
         }
-        updateStickyOffsets();
-      });
 
-      const dropdown = document.querySelector('.hub-dropdown');
-      const dropbtn = document.querySelector('.hub-dropbtn');
-      let closeTimeout;
+        const dropdown = document.querySelector('.hub-dropdown');
+        const dropbtn = document.querySelector('.hub-dropbtn');
+        let closeTimeout;
 
       if (dropdown && dropbtn) {
         dropbtn.addEventListener('click', (e) => {

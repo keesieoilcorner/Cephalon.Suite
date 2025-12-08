@@ -239,8 +239,10 @@ body.embedded .calc-stagger {
 
 /* Hub navigation */
 .hub-header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1001;
     display: flex;
     align-items: center;
@@ -369,6 +371,8 @@ body.embedded .calc-stagger {
 @media (max-width: 768px) {
     .hub-header {
         padding: 12px 20px;
+        left: 0;
+        right: 0;
     }
     .hub-header.scrolled {
         padding: 10px 20px;
@@ -381,8 +385,17 @@ body.embedded .calc-stagger {
         padding: 9px 14px;
     }
 }
-.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-.container { padding-bottom: 320px; }
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: calc(var(--nav-height, 0px) + 16px) 24px calc(320px + var(--summary-height, 140px));
+    min-height: calc(100vh + var(--summary-height, 140px) + 120px);
+}
+.container::after {
+    content: "";
+    display: block;
+    height: 200px;
+}
 @media (min-width: 1400px) {
     .container { max-width: 1400px; }
 }
@@ -954,6 +967,29 @@ body.ab-compare .compare-chips-row.ab-compare-chips-row { opacity: 1; pointer-ev
 
 .lvl-step-btn:active {
     transform: scale(0.95);
+}
+
+/* Keep the Cephalon Suite header (Explore Tools) always on top */
+.hub-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0;
+    right: 0;
+    z-index: 1500 !important;
+    pointer-events: auto;
+}
+
+/* Enforce stickiness for summary bar and plot card on all viewports */
+.summary-bar {
+    position: sticky;
+    top: var(--nav-height, 0px);
+    z-index: 1200;
+}
+.plot-sticky {
+    position: sticky;
+    top: calc(var(--nav-height, 0px) + var(--summary-height, 140px) + 4px);
+    z-index: 1180;
+    margin-top: 4px;
 }
 
 /* Editable Target Level in sticky bar */
