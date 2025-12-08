@@ -640,7 +640,7 @@ function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     const aoePct = Math.min(capAoe, baseAoe);
 
     // Current HP at level (ignore shields/OG for both; AoE ignores shields as per toxin-like)
-    const hp = healthAt(level, params.baseLevel, faction, baseHealth);
+    const { hp } = healthShieldForScaling(level, params, baseHealth, baseShield, faction);
 
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
@@ -666,7 +666,7 @@ function energyVampireDamageAt(params, level, baseHealth, faction) {
     if (!spec) return { val: 0, pct: 0, mfdPct: 0 };
     const strengthMul = Math.max(0, (params.abilityStrengthPct || 0) / 100);
     const pct = (spec.basePct || 0) * strengthMul;
-    const hp = healthAt(level, params.baseLevel, faction, baseHealth) * difficultyFactor(params.enemyDifficulty);
+    const { hp } = healthShieldForScaling(level, params, baseHealth, params.baseShield, faction);
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarStrength = getRoarStrengthPct(params);
@@ -711,7 +711,7 @@ function reaveDamageAtLevel(params, level, baseHealth, faction) {
     if (!spec) return { val: 0, pct: 0 };
     const basePct = params.reaveEnthrallEnabled ? spec.enthrallPct : spec.basePct;
     const effPct = basePct * Math.max(0, (params.abilityStrengthPct || 0) / 100);
-    const hp = healthAt(level, params.baseLevel, faction, baseHealth) * difficultyFactor(params.enemyDifficulty);
+    const { hp } = healthShieldForScaling(level, params, baseHealth, params.baseShield, faction);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
     const roarStrength = getRoarStrengthPct(params);
     const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
@@ -737,8 +737,7 @@ function reapSowDamageAtLevel(params, level, baseHealth, baseShield, faction, { 
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const diffMul = difficultyFactor(params.enemyDifficulty);
 
-    const hp = healthAt(level, params.baseLevel, faction, baseHealth) * diffMul;
-    const sh = shieldAt(level, params.baseLevel, faction, baseShield) * diffMul;
+    const { hp, sh } = healthShieldForScaling(level, params, baseHealth, baseShield, faction);
     const armorInfo = scaledArmorWithStrip(level, params);
     const armorDR = armorInfo.dr;
 
@@ -2685,6 +2684,24 @@ function shieldEximusAt(lvl, baseLevel, faction, baseShield) {
     if (!factionHasShieldScaling(faction)) return 0;
     return baseShield * (shieldScaling[faction] || (()=>1))(lvl, baseLevel)
         * eximusShieldMultiplier(lvl, baseLevel);
+}
+
+// Unified helper for abilities that scale off enemy HP/SH, respecting Eximus multipliers.
+function healthShieldForScaling(level, params, baseHealth, baseShield, faction) {
+    const diffMul = difficultyFactor(params.enemyDifficulty);
+    let hp, sh;
+    if (params.enemyType === 'eximus_def') {
+        hp = healthEximusDefAt(level, params.baseLevel, faction, baseHealth);
+        sh = shieldEximusAt(level, params.baseLevel, faction, baseShield);
+    } else if (params.enemyType === 'eximus_nodef') {
+        hp = healthEximusNoDefAt(level, params.baseLevel, faction, baseHealth);
+        sh = 0;
+    } else {
+        hp = healthAt(level, params.baseLevel, faction, baseHealth);
+        sh = shieldAt(level, params.baseLevel, faction, baseShield);
+    }
+    if (!factionHasShieldScaling(faction)) sh = 0;
+    return { hp: hp * diffMul, sh: sh * diffMul };
 }
 
 function ehpAtLevel(level, params) {
