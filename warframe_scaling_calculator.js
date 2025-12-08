@@ -476,7 +476,8 @@ function applyArmorDR(val, armorDR, { isTrueDamage = false } = {}) {
 function toxinDotFromInitial(initialToxinFinal, params, { toxinEnabled = true } = {}) {
     if (!toxinEnabled || initialToxinFinal <= 0) return 0;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const toxinShardMul = 1 + Math.max(0, (params.toxinDamagePct || 0)) / 100;
     return initialToxinFinal * 0.5 * roarMul * toxinShardMul * 6;
 }
@@ -609,6 +610,24 @@ function getMfdBonus(strengthPct) {
     return { markPct, markMul: 1 + markPct };
 }
 
+function getRoarStrengthPct(params) {
+    if (!params) return 0;
+    const derived = params.roarAbilityStrengthPct;
+    if (Number.isFinite(derived)) return Math.max(0, derived);
+    const base = Math.max(0, params.abilityStrengthPct || 0);
+    const bonus = params.roarPrecisionIntensify ? 90 : 0;
+    return base + bonus;
+}
+
+function getNourishStrengthPct(params) {
+    if (!params) return 0;
+    const derived = params.nourishAbilityStrengthPct;
+    if (Number.isFinite(derived)) return Math.max(0, derived);
+    const base = Math.max(0, params.abilityStrengthPct || 0);
+    const bonus = params.nourishPrecisionIntensify ? 90 : 0;
+    return base + bonus;
+}
+
 function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
     const spec = getHealthScalingSpec('smite');
     if (!spec) return { main: 0, aoe: 0 };
@@ -625,7 +644,8 @@ function smiteDamageAtLevel(params, level, baseHealth, baseShield, faction) {
 
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const mfd = (params.smiteMfdEnabled && params.smiteSingleEnabled)
         ? getMfdBonus(params.abilityStrengthPct || 0)
@@ -649,7 +669,8 @@ function energyVampireDamageAt(params, level, baseHealth, faction) {
     const hp = healthAt(level, params.baseLevel, faction, baseHealth) * difficultyFactor(params.enemyDifficulty);
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const mfd = (params.smiteMfdEnabled)
         ? getMfdBonus(params.abilityStrengthPct || 0)
@@ -678,7 +699,8 @@ function regurgitateDamageAt(params) {
     const hpBonus = 0.10 * hp; // 10% enemy max HP added before multipliers
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const dmg = (baseDmg + hpBonus) * abilityDamageMul * roarMul * statusMul * vulnerabilityMultiplier(params);
     return { val: dmg, base: baseDmg + hpBonus };
@@ -691,7 +713,8 @@ function reaveDamageAtLevel(params, level, baseHealth, faction) {
     const effPct = basePct * Math.max(0, (params.abilityStrengthPct || 0) / 100);
     const hp = healthAt(level, params.baseLevel, faction, baseHealth) * difficultyFactor(params.enemyDifficulty);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const dmg = hp * effPct * roarMul * abilityDamageMul;
     return { val: dmg, pct: effPct };
@@ -709,7 +732,8 @@ function reapSowDamageAtLevel(params, level, baseHealth, baseShield, faction, { 
 
     const statusMul = statusDamageMultiplier(params.statusStacks);
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct || 0) / 100) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * roarStrength / 100) : 1;
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const diffMul = difficultyFactor(params.enemyDifficulty);
 
@@ -748,7 +772,8 @@ function buildReflectiveMultiplierParts(params, { useNourish = false } = {}) {
 
     // Buffs that can be excluded per-source.
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
 
     // Summoner's Wrath only applies when Nekros (Shadows) or Damage Decoy are active.
     const swAllowed = params.nekrosEnabled || params.damageDecoyEnabled;
@@ -893,7 +918,8 @@ function ironSkinDetonationDamage(params, level, { vulnMul = null, enemyDamageOv
     const ogInfo = ironSkinOverguardAt(params, level, enemyDamageOverride);
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
     const statusMulLocal = statusDamageMultiplier(params.statusStacks);
     const vuln = vulnMul == null ? vulnerabilityMultiplier(params) : vulnMul;
     const destructPct = (params.destructPct ?? getDestructPct(params.destructRank || 0)) / 100;
@@ -908,7 +934,8 @@ function scalingMultiplierFromParams(params, { useNourish = true } = {}) {
     const baseAddMul = statusDamageMultiplier(params.statusStacks);
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
     const nourishMul = (useNourish && params.nourishEnabled) ? (1 + Math.max(0, params.nourishPct || 0) / 100) : 1;
     const vulnMul = vulnerabilityMultiplier(params);
     if (mode === 'reflective') {
@@ -1010,10 +1037,10 @@ const dom = {
     strip: pick(['heatEnabled','corrosiveStacks','corrosiveStacksRange','cp','cpRange']),
     // Incoming damage + status stacks
     damage: pick(['baseDamage','baseDamageRange','statusStacks','statusStacksVal','radiationStacks','radiationStacksVal']),
-    // Multipliers (mind control, Summoner's Wrath, toggles for reflective scaling)
-    multipliers: pick(['mindControl','mindControlRange','mindControlEnabled','nekrosEnabled','summWrath','summWrathRange','summWrathEnabled','damageDecoyEnabled','malletEnabled','accuseEnabled','roarEnabled','roarSubsume','roarDisplay','atlasPetrifyEnabled','calibanWrathEnabled','equinoxRageEnabled','garaMassEnabled','garaSplinterEnabled','jadeJudgementsEnabled','khoraDomeEnabled','nezhaChakramEnabled','novaPrimeEnabled','oraxiaEmbraceEnabled','qorvexWallEnabled','yareliSeaEnabled','yareliMerulinaEnabled','absorbEnabled']),
+// Multipliers (mind control, Summoner's Wrath, toggles for reflective scaling)
+    multipliers: pick(['mindControl','mindControlRange','mindControlEnabled','nekrosEnabled','summWrath','summWrathRange','summWrathEnabled','damageDecoyEnabled','malletEnabled','accuseEnabled','roarEnabled','roarSubsume','roarPrecisionIntensify','roarDisplay','atlasPetrifyEnabled','calibanWrathEnabled','equinoxRageEnabled','garaMassEnabled','garaSplinterEnabled','jadeJudgementsEnabled','khoraDomeEnabled','nezhaChakramEnabled','novaPrimeEnabled','oraxiaEmbraceEnabled','qorvexWallEnabled','yareliSeaEnabled','yareliMerulinaEnabled','absorbEnabled']),
     // Warframe stats
-    warframe: pick(['wfAbilityStrength','wfAbilityDamage','wfToxinDamage','wfBaseArmor','wfArmorIncrease','wfArmorAdded','ironShrapnelEnabled','ironSkinDisplay','ironShrapnelDisplay','destructRank','destructRankDisplay','destructStacks','absorbEnabled','nourishEnabled','nourishSubsume','trueToxinEnabled','trueDamageEnabled','nekrosMultDisplay','damageDecoyDisplay','nourishDisplay','coldWardEnabled','coldWardDisplay','linkEnabled','linkDisplay','reverseRotorEnabled','reverseRotorDisplay','mesmerSkinEnabled','thornsEnabled','thornsDisplay','shatterShieldEnabled','shatterShieldDisplay']),
+    warframe: pick(['wfAbilityStrength','wfAbilityDamage','wfToxinDamage','wfBaseArmor','wfArmorIncrease','wfArmorAdded','ironShrapnelEnabled','ironSkinDisplay','ironShrapnelDisplay','destructRank','destructRankDisplay','destructStacks','absorbEnabled','nourishEnabled','nourishSubsume','nourishPrecisionIntensify','trueToxinEnabled','trueDamageEnabled','nekrosMultDisplay','damageDecoyDisplay','nourishDisplay','coldWardEnabled','coldWardDisplay','linkEnabled','linkDisplay','reverseRotorEnabled','reverseRotorDisplay','mesmerSkinEnabled','thornsEnabled','thornsDisplay','shatterShieldEnabled','shatterShieldDisplay']),
     // Target selection and faction/difficulty
     target: pick(['targetLevel','targetLevelRange','faction','enemyType','enemyDifficulty']),
     // UI controls/toggles
@@ -1071,6 +1098,7 @@ const {
     accuseEnabled: accuseEnabledEl,
     roarEnabled: roarEnabledEl,
     roarSubsume: roarSubsumeEl,
+    roarPrecisionIntensify: roarPrecisionIntensifyEl,
     roarDisplay: roarDisplayEl,
     atlasPetrifyEnabled: atlasPetrifyEnabledEl,
     calibanWrathEnabled: calibanWrathEnabledEl,
@@ -1104,6 +1132,7 @@ const {
     absorbEnabled: absorbEnabledEl,
     nourishEnabled: nourishEnabledEl,
     nourishSubsume: nourishSubsumeEl,
+    nourishPrecisionIntensify: nourishPrecisionIntensifyEl,
     nourishDisplay: nourishDisplayEl,
     coldWardEnabled: coldWardEnabledEl,
     linkEnabled: linkEnabledEl,
@@ -1472,6 +1501,7 @@ const queryFields = {
     abilityDamage:  { els: [abilityDamageEl], def: 0 },
     nourishOn:      { els: [nourishEnabledEl], def: false, bool: true },
     nourishSubsume: { els: [nourishSubsumeEl], def: false, bool: true },
+    precisionNourish:{ els: [nourishPrecisionIntensifyEl], def: false, bool: true },
     coldWardOn:     { els: [coldWardEnabledEl], def: false, bool: true },
     linkOn:         { els: [linkEnabledEl], def: false, bool: true },
     reverseRotorOn: { els: [reverseRotorEnabledEl], def: false, bool: true },
@@ -1479,6 +1509,7 @@ const queryFields = {
     trueToxinOn:    { els: [trueToxinEnabledEl], def: false, bool: true },
     roarOn:         { els: [roarEnabledEl], def: false, bool: true },
     roarSubsume:    { els: [roarSubsumeEl], def: false, bool: true },
+    precisionRoar:  { els: [roarPrecisionIntensifyEl], def: false, bool: true },
     trueDamage:     { els: [trueDamageEnabledEl], def: false, bool: true },
     wfToxinDamage:  { els: [toxinDamageEl], def: 0 },
     wfBaseArmor:    { els: [wfBaseArmorEl], def: 0 },
@@ -1718,7 +1749,8 @@ function feastDamageAtLevel(params, level) {
     const sumTerm = (((level * count) - 1) / 15) + 1;
     const abilityDamageMul = spec.usesAbilityDamage ? (1 + Math.max(0, (params.abilityDamagePct || 0)) / 100) : 1;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
     const statusMul = spec.usesStatus ? statusDamageMultiplier(params.statusStacks) : 1;
     return base * sumTerm * abilityDamageMul * roarMul * statusMul;
 }
@@ -1741,7 +1773,8 @@ function elementalWardToxinDamageAt(params, level) {
 
     const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
     const statusMul = statusDamageMultiplier(params.statusStacks);
 
     return spec.basePct * hp * abilityDamageMul * roarMul * statusMul;
@@ -1758,7 +1791,8 @@ function levelScalingDamageAtLevel(params, level) {
     const lvlMul = spec.levelScale === "perLevel" ? Math.max(1, level) : Math.max(1, Math.ceil(level / 10));
     const abilityDamageMul = spec.usesAbilityDamage ? (1 + Math.max(0, (params.abilityDamagePct || 0)) / 100) : 1;
     const roarBase = params.roarSubsume ? 0.3 : 0.5;
-    const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+    const roarStrength = getRoarStrengthPct(params);
+    const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
     const nourishMul = (spec.usesNourish && params.nourishEnabled) ? (1 + Math.max(0, params.nourishPct || 0) / 100) : 1;
     const statusMul = spec.usesStatus ? statusDamageMultiplier(params.statusStacks) : 1;
     const vaubanMul = (spec.allowVauban && params.vaubanPassive) ? 1.25 : 1;
@@ -2008,7 +2042,8 @@ function scalingDamageSample(params, lvl, { vulnMul = null, scalingMul = null } 
     if (params.reflectiveAbility === 'accuse' && params.baseDamage > 0) {
         const dm = damageMultiplier(lvl, params.baseLevel, params.faction);
         const roarBase = params.roarSubsume ? 0.3 : 0.5;
-        const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+        const roarStrength = getRoarStrengthPct(params);
+        const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
         const nourishMul = (params.nourishEnabled && params.reflectiveAbility !== 'damage_decoy')
             ? (1 + Math.max(0, params.nourishPct || 0) / 100)
             : 1;
@@ -2020,7 +2055,8 @@ function scalingDamageSample(params, lvl, { vulnMul = null, scalingMul = null } 
         const dm = damageMultiplier(lvl, params.baseLevel, params.faction);
         const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
         const roarBase = params.roarSubsume ? 0.3 : 0.5;
-        const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+        const roarStrength = getRoarStrengthPct(params);
+        const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
         const statusMul = statusDamageMultiplier(params.statusStacks);
         return params.baseDamage * dm * statusMul * abilityDamageMul * roarMul * effectiveVuln;
     }
@@ -2211,10 +2247,12 @@ if (reaveEnthrallEl) {
 
 if (roarEnabledEl) roarEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (roarSubsumeEl) roarSubsumeEl.addEventListener('change', () => scheduleHandleChange('change'));
+if (roarPrecisionIntensifyEl) roarPrecisionIntensifyEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (trueDamageEnabledEl) trueDamageEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (trueToxinEnabledEl) trueToxinEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (nourishEnabledEl) nourishEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (nourishSubsumeEl) nourishSubsumeEl.addEventListener('change', () => scheduleHandleChange('change'));
+if (nourishPrecisionIntensifyEl) nourishPrecisionIntensifyEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (coldWardEnabledEl) coldWardEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (atlasPetrifyEnabledEl) atlasPetrifyEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
 if (calibanWrathEnabledEl) calibanWrathEnabledEl.addEventListener('change', () => scheduleHandleChange('change'));
@@ -3842,7 +3880,11 @@ function readParams() {
     const nekrosMultDerived = 1.5 * abilityStrengthMul;
     const damageDecoyMultDerived = 3.5 * abilityStrengthMul;
     const nourishBase = (nourishSubsumeEl?.checked ? 0.45 : 0.75);
-    const nourishPct = nourishBase * abilityStrengthPct;
+    const roarPrecision = !!roarPrecisionIntensifyEl?.checked;
+    const nourishPrecision = !!nourishPrecisionIntensifyEl?.checked;
+    const roarAbilityStrengthPct = abilityStrengthPct + (roarPrecision ? 90 : 0);
+    const nourishAbilityStrengthPct = abilityStrengthPct + (nourishPrecision ? 90 : 0);
+    const nourishPct = nourishBase * nourishAbilityStrengthPct;
     const reapCountRaw = parseInt(reapEnemyCountEl?.value || '1', 10);
     const reapEnemyCount = Math.max(1, Math.min(20, Number.isFinite(reapCountRaw) ? reapCountRaw : 1));
 
@@ -3889,6 +3931,8 @@ function readParams() {
     mindControlPct: Math.max(0, parseInt(mindControlEl.value || '0')),
     mindControlEnabled: !!mindControlEnabledEl.checked,
     abilityStrengthPct,
+    roarAbilityStrengthPct,
+    nourishAbilityStrengthPct,
     abilityDamagePct,
     toxinDamagePct,
     wfBaseArmor,
@@ -3909,7 +3953,9 @@ function readParams() {
     damageDecoyEnabled: !!damageDecoyEnabledEl.checked,
     nourishEnabled: !!nourishEnabledEl.checked,
     nourishSubsume: !!nourishSubsumeEl.checked,
+    nourishPrecisionIntensify: nourishPrecision,
     nourishPct,
+    roarPrecisionIntensify: roarPrecision,
     atlasPetrifyEnabled: !!atlasPetrifyEnabledEl?.checked,
     calibanWrathEnabled: !!calibanWrathEnabledEl?.checked,
     equinoxRageEnabled: !!equinoxRageEnabledEl?.checked,
@@ -4050,12 +4096,14 @@ function updateReflectiveDerivedDisplays(params) {
     }
     if (roarDisplayEl) {
     const base = params.roarSubsume ? 0.3 : 0.5;
-    const pct = base * params.abilityStrengthPct;
+    const roarStrength = getRoarStrengthPct(params);
+    const pct = base * roarStrength;
     roarDisplayEl.textContent = `${pct.toFixed(0)}%`;
     }
     if (nourishDisplayEl) {
     const base = params.nourishSubsume ? 0.45 : 0.75;
-    const pct = base * params.abilityStrengthPct;
+    const nourishStrength = getNourishStrengthPct(params);
+    const pct = base * nourishStrength;
     nourishDisplayEl.textContent = `${pct.toFixed(0)}%`;
     }
     if (coldWardDisplayEl) {
@@ -4222,7 +4270,8 @@ const {
         const dm = damageMultiplier(targetLevel, baseLevel, faction);
         const abilityDamageMul = 1 + Math.max(0, (params.abilityDamagePct || 0)) / 100;
         const roarBase = params.roarSubsume ? 0.3 : 0.5;
-        const roarMul = params.roarEnabled ? (1 + roarBase * (params.abilityStrengthPct / 100)) : 1;
+        const roarStrength = getRoarStrengthPct(params);
+        const roarMul = params.roarEnabled ? (1 + roarBase * (roarStrength / 100)) : 1;
         const statusMul = statusDamageMultiplier(params.statusStacks);
         scalingVal = baseDamage > 0 ? baseDamage * dm * statusMul * abilityDamageMul * vulnMul * roarMul : 0;
         scalingMulVal = dm * statusMul * abilityDamageMul * vulnMul * roarMul;
