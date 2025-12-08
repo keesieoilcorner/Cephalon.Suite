@@ -3,7 +3,7 @@ https://discord.gg/Wm5WZ76ytE
 
 Things to be added to scaling calc:
 - Faction weaknesses
-- Precision intensify implementation
+- Precision intensify implementation (Partially implemented)
 - Quantization
 - Enemy selection system
 - General refinement
