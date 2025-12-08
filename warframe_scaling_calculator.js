@@ -2275,6 +2275,12 @@ if (malletEnabledEl) malletEnabledEl.addEventListener('change', () => scheduleHa
     updateMindControlEnabledState();
     updateRadiationEnabledState();
     if (getScalingMode() === 'reflective') enforceReflectiveExclusive();
+    const params = readParams();
+    if (getScalingMode() === 'health') {
+        updateHealthScalingUI(params);
+    } else if (getScalingMode() === 'level') {
+        updateLevelScalingUI(params);
+    }
     scheduleHandleChange('change');
     });
 });
@@ -3915,6 +3921,14 @@ function readParams() {
         trueToxinFlag = !gastroOn;
     }
 
+    // Lock scaling mode to the selected ability group even if the radio desyncs.
+    let scalingMode = getScalingMode();
+    if (healthScalingMode && healthScalingMode !== 'none') {
+        scalingMode = 'health';
+    } else if (levelScalingMode && levelScalingMode !== 'none') {
+        scalingMode = 'level';
+    }
+
     return {
     baseLevel: Math.max(1, parseInt(baseLevelEl.value || '1')),
     baseHealth: Math.max(1, parseInt(baseHealthEl.value || '0')),
@@ -3995,7 +4009,7 @@ function readParams() {
     smiteMfdEnabled: !!smiteMfdEl?.checked,
     reaveEnthrallEnabled: !!reaveEnthrallEl?.checked,
     reapEnemyCount,
-    scalingMode: getScalingMode(),
+    scalingMode,
     reflectiveAbility,
     xAxisFrom,
     xAxisTo,
