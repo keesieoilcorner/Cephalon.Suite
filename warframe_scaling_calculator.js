@@ -3780,7 +3780,7 @@ function animateFromTo(fromSeries, toSeries, duration=500, mode={}) {
         const info = toFc || fromFc || { color: compareLegendInfo(f).color, dash: compareLegendInfo(f).dash, label: compareLegendInfo(f).label || f };
         const appearing = !!toFc && !fromFc;
         const disappearing = !!fromFc && !toFc;
-        const reveal = appearing ? e : (disappearing ? (1 - e) : e);
+        const reveal = appearing ? e : (disappearing ? (1 - e) : 1);
         mixedFactions.push({
             faction: f,
             label: (toFc?.label || fromFc?.label || `${metricLabels[toSeries.metric] || toSeries.metric} - ${compareLegendInfo(f).label || f}`),
