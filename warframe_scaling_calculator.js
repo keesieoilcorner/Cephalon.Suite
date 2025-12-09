@@ -3511,7 +3511,7 @@ function resampleComparisonSeries(series, targetXs) {
     start: targetXs[0],
     end: targetXs[targetXs.length - 1],
     factions: resampledFactions,
-    maxY
+    maxY: Math.max(series.maxY || 0, maxY)
     };
 }
 
@@ -3759,6 +3759,7 @@ function animateFromTo(fromSeries, toSeries, duration=500, mode={}) {
 
     // Ensure we render the starting state immediately (e=0) so capture streams don't start from the previous plot.
     const initialMixed = resampleComparisonSeries(fromSeries, xs) || buildComparisonSeed(toSeries);
+    if (fromSeries && fromSeries.maxY != null) initialMixed.maxY = fromSeries.maxY;
     currentBlend = initialMixed;
     drawImmediate(initialMixed, 0);
 
@@ -4826,7 +4827,6 @@ function handleChange(trigger) {
     const sig = getCompareSignature(params);
     const sigChanged = sig !== lastCompareSignature;
     if (sigChanged) {
-        axisState.compare = { maxY: null, start: null, end: null };
         lastCompareSignature = sig;
         triggerWipe(compareResultCard);
     }
