@@ -4171,9 +4171,10 @@ function animateComparison(fromSeries, toSeries, duration=500) {
 // Read current form values (with basic clamping) so calculations don't need to touch the DOM.
 function readParams() {
     
-    // Clamping Base Armor for values under 200
+    // Clamping Base Armor for values under 200 and over 1000
     let ba = parseInt(baseArmorEl.value || "0");
     if (ba < 0) ba = 0;
+    if (ba > 1000) ba = 1000;
     if (ba > 0 && ba < 200) ba = 200;
     
     const abilityStrengthPct = Math.max(0, parseFloat(abilityStrengthEl?.value || '100'));
@@ -4229,10 +4230,15 @@ function readParams() {
         scalingMode = 'level';
     }
 
+    const clampVal = (val, min, max) => {
+    const num = Number.isFinite(val) ? val : 0;
+    return Math.max(min, Math.min(max, num));
+    };
+
     return {
     baseLevel: Math.max(1, parseInt(baseLevelEl.value || '1')),
-    baseHealth: Math.max(1, parseInt(baseHealthEl.value || '0')),
-    baseShield: Math.max(0, parseInt(baseShieldEl.value || '0')),
+    baseHealth: clampVal(parseInt(baseHealthEl.value || '0'), 1, 10000),
+    baseShield: clampVal(parseInt(baseShieldEl.value || '0'), 0, 10000),
     baseArmor: ba,
     heatEnabled: !!heatEnabledEl.checked,
     corrosiveStacks: parseInt(corrosiveStacksEl.value || "0"),
