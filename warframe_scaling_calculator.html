@@ -234,8 +234,23 @@
       <div class="muted" id="intersectionNote" style="margin-top:6px;"></div>
           <div class="plot-actions">
             <div class="plot-actions-left">
-              <button id="exportPlotBg" class="btn btn-small">Export PNG (background)</button>
-              <button id="exportPlotTransparent" class="btn btn-small">Export PNG (transparent)</button>
+              <label class="inline-toggle">
+                <input type="checkbox" id="transparentBgToggle">
+                <span class="field-label">Transparent Background</span>
+                <span class="tooltip-icon" title="Transparent animated exports use alpha-friendly codecs that may look softer than opaque H.264. Increase DPI/bitrate if you need extra sharpness.">?</span>
+              </label>
+              <select id="exportMp4Quality" class="summary-select">
+                <option value="2k60" selected>MP4: 2K @ 60fps</option>
+                <option value="1080p60">MP4: 1080p @ 60fps</option>
+                <option value="1080p30">MP4: 1080p @ 30fps</option>
+              </select>
+              <select id="exportDpiScale" class="summary-select">
+                <option value="1" selected>DPI: 1x</option>
+                <option value="1.5">DPI: 1.5x</option>
+                <option value="2">DPI: 2x</option>
+              </select>
+              <button id="exportPlotPng" class="btn btn-small" title="Save the current plot as a PNG.">Export Image</button>
+              <button id="exportPlotMp4" class="btn btn-small" title="Record an animated plot using the selected resolution and FPS.">Export Animation</button>
             </div>
             <div class="compare-panel">
               <div class="axis-inline">

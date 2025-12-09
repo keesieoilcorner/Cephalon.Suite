@@ -1054,7 +1054,7 @@ const dom = {
     // Target selection and faction/difficulty
     target: pick(['targetLevel','targetLevelRange','faction','enemyType','enemyDifficulty']),
     // UI controls/toggles
-    controls: pick(['togglePlot','shareBtn','showBase','showExDef','showExNoDef','showDamage','showScaling','showEHP','exportPlotBg','exportPlotTransparent','factionSticky','steelPathSticky','compareModeBottom','compareMetricBottom','xAxisFrom','xAxisTo','yAxisMax']),
+    controls: pick(['togglePlot','shareBtn','showBase','showExDef','showExNoDef','showDamage','showScaling','showEHP','transparentBgToggle','exportPlotPng','exportPlotMp4','exportMp4Quality','exportDpiScale','factionSticky','steelPathSticky','compareModeBottom','compareMetricBottom','xAxisFrom','xAxisTo','yAxisMax']),
     levelScaling: pick(['levelScalingSelect','vaubanPassiveEnabled','overdriverEnabled','feastEnemyCount','arachneEnabled','arachneRank','holsterAmpEnabled','vigorousSwapEnabled']),
     healthScaling: pick(['healthScalingSelect','smiteSingleEnabled','smiteAoEEnabled','smiteSubsumeEnabled','smiteMfdEnabled','reaveEnthrallEnabled','reapEnemyCount','regurgitateGastroEnabled']),
     reflectiveSelect: pick(['reflectiveSelect']),
@@ -1179,8 +1179,11 @@ const {
     showDamage: showDamageEl,
     showScaling: showScalingEl,
     showEHP: showEHPEl,
-    exportPlotBg,
-    exportPlotTransparent,
+    transparentBgToggle,
+    exportPlotPng,
+    exportPlotMp4,
+    exportMp4Quality,
+    exportDpiScale,
     factionSticky,
     steelPathSticky,
     compareModeBottom,
@@ -1447,6 +1450,12 @@ const {
     plot: canvas
 } = dom.plot;
 const ctx = canvas.getContext('2d');
+let exportDimensions = null;
+let recordingFillColor = null;
+let recordingActive = false;
+let recordingIncludeLegend = false;
+let recordingLegendEntries = null;
+let recordingLegendLayout = null;
 const plotWrapEl = document.querySelector('.plot-wrap');
 const resultCard = document.getElementById('resultCard');
 const compareResultCard = document.getElementById('compareResultCard');
@@ -1469,8 +1478,11 @@ const {
 } = dom.summary;
 
 // Plot export controls
-const exportPlotBgBtn = exportPlotBg;
-const exportPlotTransparentBtn = exportPlotTransparent;
+const transparentBgToggleEl = transparentBgToggle;
+const exportPlotPngBtn = exportPlotPng;
+const exportPlotMp4Btn = exportPlotMp4;
+const exportMp4QualityEl = exportMp4Quality;
+const exportDpiScaleEl = exportDpiScale;
 const compareModeEl = compareModeBottom;
 const compareMetricEl = compareMetricBottom;
 const compareShowBaseEl = document.getElementById('compareShowBase');
@@ -1936,8 +1948,6 @@ function updateHealthScalingUI(params) {
     // Auto flags in Warframe Stats
     if (trueDamageEnabledEl) trueDamageEnabledEl.checked = !!smiteSingleEnabledEl?.checked;
     if (trueToxinEnabledEl) trueToxinEnabledEl.checked = !!smiteAoEEnabledEl?.checked;
-    if (smiteMfdEl) smiteMfdEl.disabled = !!smiteAoEEnabledEl?.checked || !smiteSingleEnabledEl?.checked;
-    if (!smiteSingleEnabledEl?.checked && smiteMfdEl) smiteMfdEl.checked = false;
     const capMain = params.smiteSubsumeEnabled ? spec.capMainSubsume : spec.capMain;
     const capAoe = params.smiteSubsumeEnabled ? spec.capAoeSubsume : spec.capAoe;
     const mainPct = smiteSingleEnabledEl?.checked
@@ -2299,26 +2309,25 @@ function syncFactionStickyFromMain() {
     if (factionSticky && factionEl) factionSticky.value = factionEl.value;
 }
 
-function exportPlot({ withBackground }) {
-    if (!canvas) return;
-    const params = readParams();
-    const toggles = readToggles();
-    const compareOn = !!(compareModeEl && compareModeEl.checked);
-    // Ensure latest draw
-    if (compareOn) {
-    currentBlend = buildComparisonSeries(params);
-    } else {
-    currentBlend = currentBlend || buildAllSeries(params, toggles);
-    }
-    drawImmediate(currentBlend, currentMixE || 1);
+function isTransparentBg() {
+    return !!(transparentBgToggleEl && transparentBgToggleEl.checked);
+}
 
-    const ratio = window.devicePixelRatio || 1;
-    const w = canvas.width;
-    const h = canvas.height;
-    // Build legend entries from current series/toggles
+function getExportScale() {
+    const fromSelect = exportDpiScaleEl ? parseFloat(exportDpiScaleEl.value || '1') : NaN;
+    if (!Number.isNaN(fromSelect) && fromSelect > 0) return fromSelect;
+    return 1;
+}
+
+function applyTransparentBgClass() {
+    document.body.classList.toggle('transparent-plot', isTransparentBg());
+}
+
+function buildLegendEntries(series, params) {
     const legend = [];
-    const series = currentBlend || (compareModeEl && compareModeEl.checked ? buildComparisonSeries(params) : buildAllSeries(params, toggles));
     const addLine = (label, color, dash=null) => legend.push({ label, color, dash });
+
+    if (!series) return legend;
 
     if (series.comparison) {
     addLine(`Metric: ${metricLabels[series.metric] || series.metric}`, '#e5e7eb');
@@ -2327,126 +2336,320 @@ function exportPlot({ withBackground }) {
         const cleaned = (fc.label || '').replace(/^(Health|Shield|Enemy Damage|EHP)\s+-\s+/i, '');
         addLine(cleaned || fc.label || fc.faction, fc.color, fc.dash);
     });
-    } else {
+    return legend;
+    }
+
     const hasShield = series.hasShield;
     const factionLabel = (() => {
-        const f = (params.faction || '').toLowerCase();
-        if (f === 'grineer') return 'Grineer / Scaldra';
-        if (f === 'corpus') return 'Corpus';
-        if (f === 'infested') return 'Infested';
-        if (f === 'corrupted') return 'Corrupted';
-        if (f === 'techrot') return 'Techrot';
-        if (f === 'murmur' || f === 'sentient' || f === 'unaffiliated') return 'Murmur / Sentient / Unaffiliated';
-        return 'Unknown';
+    const f = (params?.faction || '').toLowerCase();
+    if (f === 'grineer') return 'Grineer / Scaldra';
+    if (f === 'corpus') return 'Corpus';
+    if (f === 'infested') return 'Infested';
+    if (f === 'corrupted') return 'Corrupted';
+    if (f === 'techrot') return 'Techrot';
+    if (f === 'murmur' || f === 'sentient' || f === 'unaffiliated') return 'Murmur / Sentient / Unaffiliated';
+    return 'Unknown';
     })();
 
     addLine(`Faction: ${factionLabel}`, '#e5e7eb');
 
     if (series.base?.enabled) {
-        addLine('Base Health', '#ef4444');
-        if (hasShield) addLine('Base Shield', '#06b6d4');
+    addLine('Base Health', '#ef4444');
+    if (hasShield) addLine('Base Shield', '#06b6d4');
     }
     if (series.exDef?.enabled) {
-        addLine('Eximus (+Defenses) Health', '#ef4444', [10,6]);
-        if (hasShield) addLine('Eximus (+Defenses) Shield', '#06b6d4', [10,6]);
+    addLine('Eximus (+Defenses) Health', '#ef4444', [10,6]);
+    if (hasShield) addLine('Eximus (+Defenses) Shield', '#06b6d4', [10,6]);
     }
     if (series.exNoDef?.enabled) addLine('Eximus (-Defenses) Health', '#ef4444', [2,8]);
     if (series.ogEnabled) addLine('Overguard', OVERGUARD_COLOR, [10,6]);
     if (series.damage?.enabled) addLine('Enemy Damage', DAMAGE_COLOR);
     if (series.scaling?.enabled) addLine('Scaling Damage', SCALING_DAMAGE_COLOR);
     if (series.ehp?.enabled) addLine('EHP', EHP_COLOR, [4,6]);
-    }
+    return legend;
+}
 
-    const entryHeight = 18;
-    const legendPad = 12;
-
-    // Layout legend entries across width with wrapping
+function layoutLegendEntries(legend, w, legendPad=12, entryHeight=18, rowGap=6, colGap=24) {
+    const positions = [];
+    if (!legend || !legend.length) return { positions, legendHeight: 0, legendPad, entryHeight };
+    // Use a temp canvas to measure text
     const temp = document.createElement('canvas');
     const tctx = temp.getContext('2d');
     tctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto';
     const maxW = w - legendPad * 2;
-    const positions = [];
     let x = legendPad;
     let y = legendPad;
-    const rowGap = 6;
-    const colGap = 24;
     legend.forEach(entry => {
-        const textW = tctx.measureText(entry.label).width;
-        const entryW = 52 + textW;
-        if (x > legendPad && x + entryW > maxW) {
+    const textW = tctx.measureText(entry.label).width;
+    const entryW = 52 + textW;
+    if (x > legendPad && x + entryW > maxW) {
         x = legendPad;
         y += entryHeight + rowGap;
-        }
-        positions.push({ entry, x, y });
-        x += entryW + colGap;
+    }
+    positions.push({ entry, x, y });
+    x += entryW + colGap;
     });
     const legendHeight = legend.length > 0 ? y + entryHeight + legendPad : 0;
+    return { positions, legendHeight, legendPad, entryHeight };
+}
 
-    temp.width = w;
-    temp.height = h + legendHeight;
+function paintLegend(ctx, legend, layout, { withBackground=true } = {}) {
+    if (!legend || !legend.length || !layout) return;
+    const { positions, legendHeight, legendPad, entryHeight } = layout;
+    if (legendHeight <= 0) return;
+
+    const w = ctx.canvas.width;
+    ctx.save();
 
     if (withBackground) {
+    const radius = 10;
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(w - radius, 0);
+    ctx.quadraticCurveTo(w, 0, w, radius);
+    ctx.lineTo(w, legendHeight - radius);
+    ctx.quadraticCurveTo(w, legendHeight, w - radius, legendHeight);
+    ctx.lineTo(radius, legendHeight);
+    ctx.quadraticCurveTo(0, legendHeight, 0, legendHeight - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    }
+
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.fillStyle = '#e5e7eb';
+    positions.forEach(pos => {
+    const { entry } = pos;
+    const yPos = pos.y + 4;
+    ctx.save();
+    ctx.strokeStyle = entry.color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash(entry.dash || []);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y + entryHeight / 2);
+    ctx.lineTo(pos.x + 34, pos.y + entryHeight / 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillText(entry.label, pos.x + 40, yPos + entryHeight / 2);
+    });
+    ctx.restore();
+}
+
+function exportPlot({ withBackground }) {
+    if (!canvas) return;
+    const prevDims = exportDimensions;
+    const baseRect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const scale = getExportScale();
+    const targetWidth = Math.max(1, Math.round(baseRect.width * dpr * scale));
+    const targetHeight = Math.max(1, Math.round(baseRect.height * dpr * scale));
+    exportDimensions = { width: targetWidth, height: targetHeight };
+    fitCanvas();
+
+    const wantsTransparent = isTransparentBg();
+    const effectiveBackground = (withBackground !== undefined) ? withBackground : !wantsTransparent;
+    const params = readParams();
+    const toggles = readToggles();
+    const presetCompareOn = !!(abCompareToggle && abCompareToggle.checked && hasBothPresets());
+    const factionCompareOn = !!(compareModeEl && compareModeEl.checked);
+    // Ensure latest draw
+    if (presetCompareOn) {
+        currentBlend = buildPresetComparisonSeries(params, { trackMaxY: false });
+    } else if (factionCompareOn) {
+        currentBlend = buildComparisonSeries(params);
+    } else {
+        currentBlend = currentBlend || buildAllSeries(params, toggles);
+    }
+    drawImmediate(currentBlend, currentMixE || 1);
+
+    const ratio = window.devicePixelRatio || 1;
+    const w = canvas.width;
+    const h = canvas.height;
+    const series = currentBlend
+        || (presetCompareOn ? buildPresetComparisonSeries(params, { trackMaxY: false })
+            : (factionCompareOn ? buildComparisonSeries(params) : buildAllSeries(params, toggles)));
+    const legend = buildLegendEntries(series, params);
+    const legendLayout = layoutLegendEntries(legend, w);
+
+    const temp = document.createElement('canvas');
+    const tctx = temp.getContext('2d');
+    temp.width = w;
+    temp.height = h + legendLayout.legendHeight;
+
+    if (effectiveBackground) {
     const bg = getComputedStyle(document.body).backgroundColor || '#0b1222';
     tctx.fillStyle = bg;
     tctx.fillRect(0, 0, temp.width, temp.height);
     }
 
-    // Legend block
-    if (legendHeight > 0) {
-    tctx.save();
-
-    if (withBackground) {
-        const radius = 10;
-        tctx.globalAlpha = 0.95;
-        tctx.fillStyle = 'rgba(15,23,42,0.9)';
-        tctx.beginPath();
-        tctx.moveTo(radius, 0);
-        tctx.lineTo(w - radius, 0);
-        tctx.quadraticCurveTo(w, 0, w, radius);
-        tctx.lineTo(w, legendHeight - radius);
-        tctx.quadraticCurveTo(w, legendHeight, w - radius, legendHeight);
-        tctx.lineTo(radius, legendHeight);
-        tctx.quadraticCurveTo(0, legendHeight, 0, legendHeight - radius);
-        tctx.lineTo(0, radius);
-        tctx.quadraticCurveTo(0, 0, radius, 0);
-        tctx.closePath();
-        tctx.fill();
-    }
-
-    tctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto';
-    tctx.fillStyle = '#e5e7eb';
-    positions.forEach(pos => {
-        const { entry } = pos;
-        const yPos = pos.y + 4;
-        tctx.save();
-        tctx.strokeStyle = entry.color;
-        tctx.lineWidth = 3;
-        tctx.setLineDash(entry.dash || []);
-        tctx.beginPath();
-        tctx.moveTo(pos.x, pos.y + entryHeight / 2);
-        tctx.lineTo(pos.x + 34, pos.y + entryHeight / 2);
-        tctx.stroke();
-        tctx.restore();
-        tctx.fillStyle = '#e5e7eb';
-        tctx.fillText(entry.label, pos.x + 40, yPos + entryHeight / 2);
-    });
-    tctx.restore();
+    if (legendLayout.legendHeight > 0) {
+    paintLegend(tctx, legend, legendLayout, { withBackground: effectiveBackground });
     }
 
     // Plot image below legend
-    tctx.drawImage(canvas, 0, legendHeight);
+    tctx.drawImage(canvas, 0, legendLayout.legendHeight);
 
+    try {
     const link = document.createElement('a');
-    link.download = withBackground ? 'warframe_plot_bg.png' : 'warframe_plot_transparent.png';
+    link.download = effectiveBackground ? 'warframe_plot_bg.png' : 'warframe_plot_transparent.png';
     link.href = temp.toDataURL('image/png');
     link.click();
+    } finally {
+    exportDimensions = prevDims;
+    fitCanvas();
+    if (currentBlend) {
+        drawImmediate(currentBlend, currentMixE || 1);
+    }
+    }
 }
 
-if (exportPlotBgBtn) {
-    exportPlotBgBtn.addEventListener('click', () => exportPlot({ withBackground: true }));
+async function exportPlotMp4Video() {
+    if (!canvas || !canvas.captureStream || typeof MediaRecorder === 'undefined') {
+    alert('Video export is not supported in this browser.');
+    return;
+    }
+
+    const qualityPresets = {
+    '2k60':    { width: 2560, fps: 60, bitrate: 12000000 },
+    '1080p60': { width: 1920, fps: 60, bitrate: 9000000 },
+    '1080p30': { width: 1920, fps: 30, bitrate: 6000000 }
+    };
+    const qualityKey = (exportMp4QualityEl && exportMp4QualityEl.value) || '2k60';
+    const preset = qualityPresets[qualityKey] || qualityPresets['2k60'];
+    const scale = getExportScale();
+    const transparent = isTransparentBg();
+
+    const mimeCandidates = transparent
+    ? [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+      ]
+    : [
+        'video/mp4;codecs=h264',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+      ];
+    const mimeType = mimeCandidates.find(type => MediaRecorder.isTypeSupported(type));
+    if (!mimeType) {
+    alert('No supported video format (MP4/WebM) is available in this browser.');
+    return;
+    }
+
+    const params = readParams();
+    const toggles = readToggles();
+    const presetCompareOn = !!(abCompareToggle && abCompareToggle.checked && hasBothPresets());
+    const compareOn = !!(compareModeEl && compareModeEl.checked);
+    const bgColor = transparent ? null : (getComputedStyle(document.body).backgroundColor || '#0b1222');
+    const targetSeries = presetCompareOn
+        ? buildPresetComparisonSeries(params, { trackMaxY: false })
+        : (compareOn ? buildComparisonSeries(params) : buildAllSeries(params, toggles));
+
+    const aspect = canvas.clientWidth > 0 ? (canvas.clientHeight / canvas.clientWidth) : 0.5625;
+    const targetWidth = Math.max(1, Math.round(preset.width * scale));
+    let targetHeight = Math.max(1, Math.round(targetWidth * aspect));
+    // H.264 prefers even dimensions
+    if (targetHeight % 2 !== 0) targetHeight += 1;
+    const transparentBoost = transparent ? 1.6 : 1;
+    const bitrateBase = preset.bitrate * transparentBoost;
+    const bitrate = Math.max(preset.bitrate, Math.round(bitrateBase * scale * scale));
+    const legendEntries = buildLegendEntries(targetSeries, params);
+    const legendLayout = layoutLegendEntries(legendEntries, targetWidth);
+    const totalHeight = targetHeight + (legendLayout.legendHeight || 0);
+
+    const prevDims = exportDimensions;
+    const prevRecordingActive = recordingActive;
+    const prevRecordingFill = recordingFillColor;
+
+    exportDimensions = { width: targetWidth, height: totalHeight };
+    recordingFillColor = bgColor;
+    recordingActive = true;
+    recordingIncludeLegend = true;
+    recordingLegendEntries = legendEntries;
+    recordingLegendLayout = legendLayout;
+    fitCanvas();
+
+    const stream = canvas.captureStream(preset.fps);
+    const options = { mimeType, videoBitsPerSecond: bitrate };
+    let recorder;
+    try {
+    recorder = new MediaRecorder(stream, options);
+    } catch (err) {
+    console.error(err);
+    alert('Failed to start recording: ' + err.message);
+    exportDimensions = prevDims;
+    recordingFillColor = prevRecordingFill;
+    recordingActive = prevRecordingActive;
+    recordingIncludeLegend = false;
+    recordingLegendEntries = null;
+    recordingLegendLayout = null;
+    fitCanvas();
+    drawImmediate(currentBlend, currentMixE || 1);
+    return;
+    }
+
+    const chunks = [];
+    const stopPromise = new Promise((resolve, reject) => {
+    recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+    recorder.onstop = () => resolve();
+    recorder.onerror = (evt) => reject(evt.error || new Error('Recording failed'));
+    });
+
+    const animDuration = 1400;
+    const buffer = 500;
+    try {
+    if (exportPlotMp4Btn) exportPlotMp4Btn.disabled = true;
+    recorder.start();
+    animateTo(params, toggles, animDuration, { unfold: true }, targetSeries);
+    setTimeout(() => {
+        if (recorder.state !== 'inactive') recorder.stop();
+    }, animDuration + buffer);
+
+    await stopPromise;
+
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `warframe_plot_${qualityKey}.${ext}`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+    console.error(err);
+    alert('Failed to export video: ' + err.message);
+    } finally {
+    exportDimensions = prevDims;
+    recordingFillColor = prevRecordingFill;
+    recordingActive = prevRecordingActive;
+    recordingIncludeLegend = false;
+    recordingLegendEntries = null;
+    recordingLegendLayout = null;
+    fitCanvas();
+    const blend = currentBlend || targetSeries;
+    if (blend) drawImmediate(blend, currentMixE || 1);
+    if (exportPlotMp4Btn) exportPlotMp4Btn.disabled = false;
+    }
 }
-if (exportPlotTransparentBtn) {
-    exportPlotTransparentBtn.addEventListener('click', () => exportPlot({ withBackground: false }));
+
+if (transparentBgToggleEl) {
+    applyTransparentBgClass();
+    transparentBgToggleEl.addEventListener('change', applyTransparentBgClass);
+}
+if (exportPlotPngBtn) {
+    exportPlotPngBtn.addEventListener('click', () => exportPlot({}));
+}
+if (exportPlotMp4Btn) {
+    exportPlotMp4Btn.addEventListener('click', () => exportPlotMp4Video());
 }
 if (compareModeEl) {
     compareModeEl.addEventListener('change', () => {
@@ -2659,9 +2862,11 @@ if (reflectiveSelectEl) {
 // ---------- Canvas helpers ----------
 function fitCanvas() {
     const rect = canvas.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(rect.width * ratio);
-    canvas.height = Math.floor(rect.height * ratio);
+    const targetW = exportDimensions?.width ?? rect.width;
+    const targetH = exportDimensions?.height ?? rect.height;
+    const ratio = exportDimensions ? 1 : (window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.floor(targetW * ratio));
+    canvas.height = Math.max(1, Math.floor(targetH * ratio));
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 let resizeRAF = 0;
@@ -3275,6 +3480,41 @@ function buildNormalBridgeFromComparison(compSeries, params, toggles) {
     return rebuilt;
 }
 
+// Resample an existing comparison series onto a new X grid so animations can morph smoothly.
+function resampleComparisonSeries(series, targetXs) {
+    if (!series || !series.factions || !Array.isArray(targetXs) || !targetXs.length) return null;
+    const { xs, start, end } = series;
+    if (!xs || !xs.length) return null;
+    const srcLen = xs.length;
+    const span = (end - start) || 1;
+    const resampledFactions = series.factions.map(fc => {
+    const vals = new Array(targetXs.length);
+    for (let i = 0; i < targetXs.length; i++) {
+        const t = (targetXs[i] - start) / span;
+        const pos = Math.min(srcLen - 1, Math.max(0, t * (srcLen - 1)));
+        const lo = Math.floor(pos);
+        const hi = Math.min(srcLen - 1, Math.ceil(pos));
+        const frac = (hi === lo) ? 0 : (pos - lo) / (hi - lo);
+        const va = fc.vals[lo] ?? 0;
+        const vb = fc.vals[hi] ?? va;
+        vals[i] = va + (vb - va) * frac;
+    }
+    return { ...fc, vals };
+    });
+    const maxY = resampledFactions.reduce((m, fc) => {
+    fc.vals.forEach(v => { if (v > m) m = v; });
+    return m;
+    }, 1);
+    return {
+    ...series,
+    xs: targetXs.slice(),
+    start: targetXs[0],
+    end: targetXs[targetXs.length - 1],
+    factions: resampledFactions,
+    maxY
+    };
+}
+
 // ---------- Number animation helpers ----------
 const numberAnims = new Map();
 function parseNumberLike(text) {
@@ -3333,14 +3573,14 @@ let animId = 0;
 function drawImmediate(series, e = 1) {
     if (!series) return;
     fitCanvas();
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    const { xs, base, exDef, exNoDef, damage, ehp, intersections, start, end, maxY, hasShield } = series;
-    const ctx = canvas.getContext('2d');
+    const w = exportDimensions?.width ?? canvas.clientWidth;
+    const h = exportDimensions?.height ?? canvas.clientHeight;
+    const { xs, base, exDef, exNoDef, damage, ehp, intersections, start, end, maxY, hasShield, comparison } = series;
     ctx.clearRect(0,0,w,h);
 
     const pad = 36;
-    const gx0 = pad, gy0 = h - pad, gx1 = w - pad, gy1 = pad;
+    const legendOffset = (recordingActive && recordingIncludeLegend && recordingLegendLayout) ? recordingLegendLayout.legendHeight : 0;
+    const gx0 = pad, gy0 = h - pad, gx1 = w - pad, gy1 = pad + legendOffset;
     const innerW = gx1 - gx0, innerH = gy0 - gy1;
 
     // Axes
@@ -3377,102 +3617,120 @@ function drawImmediate(series, e = 1) {
     const xScale = (lvl)=> gx0 + (lvl - start) / (end - start || 1) * innerW;
     const yScale = (v)=> gy0 - (v / (maxY || 1)) * innerH;
 
-    if (series.comparison) {
-    function drawSeriesVals(vals, color, dash=null) {
-        ctx.setLineDash(dash || []);
-        ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath();
+    if (comparison) {
+    const revealGlobal = Math.max(0, Math.min(1, e));
+    function drawSeriesVals(fc) {
+        const vals = fc.vals;
+        const reveal = Math.max(0, Math.min(1, fc.reveal == null ? revealGlobal : fc.reveal));
+        ctx.setLineDash(fc.dash || []);
+        ctx.strokeStyle = fc.color; ctx.lineWidth = 2.5; ctx.beginPath();
         const N = vals.length;
+        const cutoff = Math.max(1, Math.floor((N - 1) * reveal));
         for (let i=0;i<N;i++){
         const x = xScale(series.xs[i]); const y = yScale(vals[i]);
         if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        if (i >= cutoff) break;
         }
         ctx.stroke();
         ctx.setLineDash([]);
     }
-    series.factions.forEach(fc => drawSeriesVals(fc.vals, fc.color, fc.dash));
-    return;
-    }
+    series.factions.forEach(fc => drawSeriesVals(fc));
+    } else {
 
-    function sample(valuesObj, i) {
-    if (valuesObj.values) return valuesObj.values[i];
-    return (1 - e) * valuesObj.from[i] + e * valuesObj.to[i];
-    }
-
-    function drawSeries(valuesObj, color, dash=null, revealRatio=1) {
-    ctx.setLineDash(dash || []);
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath();
-    const N = (valuesObj.values ? valuesObj.values.length : valuesObj.to.length);
-    const cutoff = Math.floor((N-1) * revealRatio);
-    for (let i=0;i<N;i++){
-        const x = xScale(xs[i]); const y = yScale(sample(valuesObj, i));
-        if (i===0) ctx.moveTo(x,y);
-        else if (i <= cutoff) ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-    }
-
-    if (base.enabled) {
-    drawSeries(base.hp, '#ef4444', null, base.hp.reveal);
-    if (hasShield) drawSeries(base.sh, '#06b6d4', null, base.sh.reveal);
-    }
-    if (exDef.enabled) {
-    drawSeries(exDef.hp, '#ef4444', [10,6], exDef.hp.reveal);
-    if (hasShield) drawSeries(exDef.sh, '#06b6d4', [10,6], exDef.sh.reveal);
-    }
-
-    if (exNoDef.enabled) {
-    drawSeries(exNoDef.hp, '#ef4444', [2,8], exNoDef.hp.reveal);
-    }
-
-    if (series.ogEnabled) {
-        drawSeries(series.og, OVERGUARD_COLOR, [10,6], series.og.reveal);
-    }
-
-    if (damage && damage.enabled) {
-    drawSeries(damage.vals, DAMAGE_COLOR, null, damage.vals.reveal);
-    }
-
-    if (series.scaling && series.scaling.enabled) {
-    drawSeries(series.scaling.vals, SCALING_DAMAGE_COLOR, null, series.scaling.vals.reveal);
-    }
-
-    if (ehp && ehp.enabled) {
-    drawSeries(ehp.vals, EHP_COLOR, [4,6], ehp.vals.reveal);
-    }
-
-    // Intersection markers (Damage/Scaling vs EHP)
-    if (ehp && ehp.enabled) {
-    const irDamage = (series.intersectionRevealDamage == null ? series.intersectionReveal : series.intersectionRevealDamage) || 0;
-    const irScaling = (series.intersectionRevealScaling == null ? series.intersectionReveal : series.intersectionRevealScaling) || 0;
-    const drawMarkers = (pts, ir) => {
-        if (!pts || !pts.length || ir <= 0) return;
-        pts.forEach(pt => {
-        const x = xScale(pt.lvl);
-        const y = yScale(pt.value);
-        ctx.save();
-        ctx.strokeStyle = INTERSECTION_COLOR;
-        ctx.fillStyle = INTERSECTION_COLOR;
-        ctx.setLineDash([4, 4]);
-
-        const yTop = gy0 - (gy0 - y) * ir;
-        ctx.beginPath();
-        ctx.moveTo(x, gy0);
-        ctx.lineTo(x, yTop);
-        ctx.stroke();
-
-        const r = 4 * ir;
-        if (r > 0.5) {
-            ctx.beginPath();
-            ctx.setLineDash([]);
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
+        function sample(valuesObj, i) {
+        if (valuesObj.values) return valuesObj.values[i];
+        return (1 - e) * valuesObj.from[i] + e * valuesObj.to[i];
         }
-        ctx.restore();
-        });
-    };
-    drawMarkers(series.intersectionsScaling, irScaling);
-    drawMarkers(series.intersectionsDamage, irDamage);
+
+        function drawSeries(valuesObj, color, dash=null, revealRatio=1) {
+        ctx.setLineDash(dash || []);
+        ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath();
+        const N = (valuesObj.values ? valuesObj.values.length : valuesObj.to.length);
+        const cutoff = Math.floor((N-1) * revealRatio);
+        for (let i=0;i<N;i++){
+            const x = xScale(xs[i]); const y = yScale(sample(valuesObj, i));
+            if (i===0) ctx.moveTo(x,y);
+            else if (i <= cutoff) ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        }
+
+        if (base.enabled) {
+        drawSeries(base.hp, '#ef4444', null, base.hp.reveal);
+        if (hasShield) drawSeries(base.sh, '#06b6d4', null, base.sh.reveal);
+        }
+        if (exDef.enabled) {
+        drawSeries(exDef.hp, '#ef4444', [10,6], exDef.hp.reveal);
+        if (hasShield) drawSeries(exDef.sh, '#06b6d4', [10,6], exDef.sh.reveal);
+        }
+
+        if (exNoDef.enabled) {
+        drawSeries(exNoDef.hp, '#ef4444', [2,8], exNoDef.hp.reveal);
+        }
+
+        if (series.ogEnabled) {
+            drawSeries(series.og, OVERGUARD_COLOR, [10,6], series.og.reveal);
+        }
+
+        if (damage && damage.enabled) {
+        drawSeries(damage.vals, DAMAGE_COLOR, null, damage.vals.reveal);
+        }
+
+        if (series.scaling && series.scaling.enabled) {
+        drawSeries(series.scaling.vals, SCALING_DAMAGE_COLOR, null, series.scaling.vals.reveal);
+        }
+
+        if (ehp && ehp.enabled) {
+        drawSeries(ehp.vals, EHP_COLOR, [4,6], ehp.vals.reveal);
+        }
+
+        // Intersection markers (Damage/Scaling vs EHP)
+        if (ehp && ehp.enabled) {
+        const irDamage = (series.intersectionRevealDamage == null ? series.intersectionReveal : series.intersectionRevealDamage) || 0;
+        const irScaling = (series.intersectionRevealScaling == null ? series.intersectionReveal : series.intersectionRevealScaling) || 0;
+        const drawMarkers = (pts, ir) => {
+            if (!pts || !pts.length || ir <= 0) return;
+            pts.forEach(pt => {
+            const x = xScale(pt.lvl);
+            const y = yScale(pt.value);
+            ctx.save();
+            ctx.strokeStyle = INTERSECTION_COLOR;
+            ctx.fillStyle = INTERSECTION_COLOR;
+            ctx.setLineDash([4, 4]);
+
+            const yTop = gy0 - (gy0 - y) * ir;
+            ctx.beginPath();
+            ctx.moveTo(x, gy0);
+            ctx.lineTo(x, yTop);
+            ctx.stroke();
+
+            const r = 4 * ir;
+            if (r > 0.5) {
+                ctx.beginPath();
+                ctx.setLineDash([]);
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+            });
+        };
+        drawMarkers(series.intersectionsScaling, irScaling);
+        drawMarkers(series.intersectionsDamage, irDamage);
+        }
+    }
+
+    if (recordingActive && recordingFillColor) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.fillStyle = recordingFillColor;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+    }
+
+    if (recordingActive && recordingIncludeLegend && recordingLegendEntries && recordingLegendEntries.length) {
+    const legendLayout = recordingLegendLayout || layoutLegendEntries(recordingLegendEntries, w);
+    paintLegend(ctx, recordingLegendEntries, legendLayout, { withBackground: !!recordingFillColor });
     }
 }
 
@@ -3499,6 +3757,11 @@ function animateFromTo(fromSeries, toSeries, duration=500, mode={}) {
     const xs = toSeries.xs;
     const keys = new Set([...toMap.keys(), ...fromMap.keys()]);
 
+    // Ensure we render the starting state immediately (e=0) so capture streams don't start from the previous plot.
+    const initialMixed = resampleComparisonSeries(fromSeries, xs) || buildComparisonSeed(toSeries);
+    currentBlend = initialMixed;
+    drawImmediate(initialMixed, 0);
+
     const step = (now) => {
         const t = Math.min(1, (now - startTime) / duration);
         const e = easeInOutCubic(t);
@@ -3515,12 +3778,16 @@ function animateFromTo(fromSeries, toSeries, duration=500, mode={}) {
             vals[i] = (1 - e) * sourceVals[i] + e * targetVals[i];
         }
         const info = toFc || fromFc || { color: compareLegendInfo(f).color, dash: compareLegendInfo(f).dash, label: compareLegendInfo(f).label || f };
+        const appearing = !!toFc && !fromFc;
+        const disappearing = !!fromFc && !toFc;
+        const reveal = appearing ? e : (disappearing ? (1 - e) : e);
         mixedFactions.push({
             faction: f,
             label: (toFc?.label || fromFc?.label || `${metricLabels[toSeries.metric] || toSeries.metric} - ${compareLegendInfo(f).label || f}`),
             color: info.color,
             dash: info.dash,
-            vals
+            vals,
+            reveal
         });
         });
 
@@ -3533,13 +3800,14 @@ function animateFromTo(fromSeries, toSeries, duration=500, mode={}) {
 
         const mixed = { ...toSeries, factions: mixedFactions, maxY };
         currentBlend = mixed;
-        drawImmediate(mixed, 1);
+        drawImmediate(mixed, e);
 
         if (t < 1) {
         animId = requestAnimationFrame(step);
         } else {
-        currentBlend = toSeries;
-        drawImmediate(toSeries, 1);
+        const finalizedFactions = toSeries.factions.map(fc => ({ ...fc, reveal: 1 }));
+        currentBlend = { ...toSeries, factions: finalizedFactions };
+        drawImmediate(currentBlend, 1);
         }
     };
 
@@ -3797,16 +4065,20 @@ function animateTo(params, toggles, duration=500, mode={}, toSeries=null) {
 
     if (targetSeries.comparison) {
     // Use the current blend if we're already in comparison mode and shapes match
-    if (currentBlend && currentBlend.comparison && currentBlend.xs.length === targetSeries.xs.length) {
+    if (mode.unfold) {
+        fromSeries = buildComparisonSeed(targetSeries);
+    } else if (currentBlend && currentBlend.comparison) {
+        if (currentBlend.xs.length === targetSeries.xs.length) {
         fromSeries = currentBlend;
-    } else {
-        // If coming from normal view, bridge using the current faction so the curve doesn't pop from zero
-        if (currentBlend && !currentBlend.comparison) {
-        fromSeries = buildComparisonBridgeFromNormal(currentBlend, targetSeries, params);
         } else {
+        fromSeries = resampleComparisonSeries(currentBlend, targetSeries.xs) || buildComparisonSeed(targetSeries);
+        }
+    } else if (currentBlend && !currentBlend.comparison) {
+        // If coming from normal view, bridge using the current faction so the curve doesn't pop from zero
+        fromSeries = buildComparisonBridgeFromNormal(currentBlend, targetSeries, params);
+    } else {
         // Fallback: zeroed seed
         fromSeries = buildComparisonSeed(targetSeries);
-        }
     }
     } else {
     if (mode.unfold) {
@@ -3949,11 +4221,11 @@ function readParams() {
         trueToxinFlag = !gastroOn;
     }
 
-    // Lock scaling mode to the selected ability group even if the radio desyncs.
+    // Prefer the radio selection; only fall back to the dropdown when no mode is chosen.
     let scalingMode = getScalingMode();
-    if (healthScalingMode && healthScalingMode !== 'none') {
+    if (scalingMode !== 'level' && healthScalingMode && healthScalingMode !== 'none') {
         scalingMode = 'health';
-    } else if (levelScalingMode && levelScalingMode !== 'none') {
+    } else if (scalingMode !== 'health' && levelScalingMode && levelScalingMode !== 'none') {
         scalingMode = 'level';
     }
 

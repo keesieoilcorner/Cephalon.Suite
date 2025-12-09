@@ -501,6 +501,7 @@ input[type="range"] {
 .divider { height: 1px; background: #4b5563; margin: 10px 0; }
 .plot-wrap { height: 500px; margin-bottom: 16px; }
 canvas { width: 100%; height: 100%; background: #111827; border-radius: 12px; border: 1px solid #334155; }
+.transparent-plot canvas { background: transparent; }
 .plot-wrap {
     position: relative;
     overflow: hidden;
